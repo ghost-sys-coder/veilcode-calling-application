@@ -9,10 +9,27 @@ export const metadata: Metadata = {
   title: { default: siteConfig.title, template: "%s | VeilCall" },
   description: siteConfig.description,
   applicationName: "VeilCall",
-  icons: { icon: "/favicon.svg", type: "image/svg+xml" },
+  icons: {
+    icon: [
+      {
+        url: "/favicon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+  },
   alternates: { canonical: "/" },
-  openGraph: { type: "website", title: siteConfig.title, description: siteConfig.description, siteName: "VeilCall", url: "/" },
-  twitter: { card: "summary", title: siteConfig.title, description: siteConfig.description },
+  openGraph: {
+    type: "website",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    siteName: "VeilCall",
+    url: "/",
+  },
+  twitter: {
+    card: "summary",
+    title: siteConfig.title,
+    description: siteConfig.description,
+  },
 };
 
 export const viewport: Viewport = {
@@ -21,6 +38,14 @@ export const viewport: Viewport = {
   themeColor: "#f6f5f1",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><ClerkProvider appearance={{ theme: shadcn }}>{children}</ClerkProvider></body></html>;
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="en">
+      <body>
+        <ClerkProvider appearance={{ theme: shadcn }}>{children}</ClerkProvider>
+      </body>
+    </html>
+  );
 }
