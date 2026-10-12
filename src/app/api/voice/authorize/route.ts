@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { isApprovedOperator } from "@/lib/access";
 import { signCallTicket } from "@/lib/call-ticket";
-import { validateUsDestination } from "@/lib/destination";
+import { validateCallingDestination } from "@/lib/destination";
 import { getVoiceConfig } from "@/lib/voice-config";
 import { isSameOrigin, voiceJson } from "@/lib/voice-responses";
 
@@ -17,8 +17,8 @@ export async function POST(request: Request) {
   }
   let body: unknown;
   try { body = await request.json(); } catch { return voiceJson({ error: "Invalid request." }, 400); }
-  const destination = validateUsDestination((body as { to?: unknown } | null)?.to);
-  if (!destination) return voiceJson({ error: "Enter a valid, permitted US number in +1 format." }, 400);
+  const destination = validateCallingDestination((body as { to?: unknown } | null)?.to);
+  if (!destination) return voiceJson({ error: "Enter a valid US, Canadian, or UK number in international format." }, 400);
   try {
     const { signingSecret } = getVoiceConfig();
     return voiceJson({ ticket: signCallTicket(userId, destination, signingSecret), destination });

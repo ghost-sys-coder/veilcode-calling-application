@@ -1,6 +1,6 @@
 import twilio from "twilio";
 import { verifyCallTicket } from "@/lib/call-ticket";
-import { validateUsDestination } from "@/lib/destination";
+import { validateCallingDestination } from "@/lib/destination";
 import { getVoiceConfig } from "@/lib/voice-config";
 
 export const runtime = "nodejs";
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     !ticket ||
     params.AccountSid !== config.accountSid ||
     params.From !== `client:${ticket.sub}` ||
-    !validateUsDestination(ticket.to)
+    !validateCallingDestination(ticket.to)
   ) {
     return new Response("Call permission expired or invalid", { status: 403 });
   }

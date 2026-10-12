@@ -11,11 +11,13 @@ const stateLabel: Record<CallState, string> = {
   connected: "VOICE SESSION ACTIVE", ended: "CALL FINISHED", error: "CONNECTION ERROR",
 };
 
+
+
 interface TokenResponse { token?: string; error?: string }
 interface AuthorizationResponse { ticket?: string; error?: string }
 
 export function Dialer({ configured, setupIssues }: { configured: boolean; setupIssues: string[] }) {
-  const [phone, setPhone] = useState("+1");
+  const [phone, setPhone] = useState("+44");
   const [state, setState] = useState<CallState>("idle");
   const [message, setMessage] = useState("Enter a US number to begin.");
   const [muted, setMuted] = useState(false);
