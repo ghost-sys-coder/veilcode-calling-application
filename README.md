@@ -1,6 +1,6 @@
 # VeilCall
 
-Private browser dialer for US outbound calls with Clerk authentication and Twilio Programmable Voice. The original custom landing page is retained. Authenticated console and calling code are implemented. **Live calling has not been tested with actual Clerk or Twilio credentials.**
+Private browser dialer for US, Canadian, and UK outbound calls with Clerk authentication and Twilio Programmable Voice. The original custom landing page is retained. Authenticated console and calling code are implemented. Live account records confirm a completed UK call; US attempts were rejected by Twilio with error 13225.
 
 ## Stack and structure
 
@@ -14,7 +14,8 @@ src/
     sign-up/[[...sign-up]]/page.tsx       Clerk registration
     console/page.tsx                     server-enforced access check
     api/voice/token/route.ts             authorized short-lived Twilio JWT
-    api/voice/authorize/route.ts         authorized US destination ticket
+    api/voice/authorize/route.ts         authorized destination ticket
+    api/voice/status/route.ts            operator-owned call outcome and error codes
     api/voice/twiml/route.ts             signed Twilio Voice webhook
     globals.css                          landing + console design tokens
   components/
@@ -28,7 +29,9 @@ src/
   lib/
     access.ts                             allowlisted Clerk IDs
     call-ticket.ts                        HMAC signed, short-lived dial permit
-    destination.ts                        verified United States destinations
+    calling-countries.ts                  shared country options and input normalization
+    destination.ts                        permitted US, Canadian, and UK destinations
+    voice-outcome.ts                      safe call outcome and error descriptions
     voice-config.ts                       fail-closed Twilio settings
     voice-responses.ts                    JSON, request origin checks
   proxy.ts                                Clerk request context, Next.js 16
@@ -57,7 +60,7 @@ Use Node 22 or later. Visit `http://localhost:3000`.
 
 ## 3. Configure Twilio
 
-You need a Twilio account with enough credit, a voice capable Twilio US number that you control, an API Key SID + Secret, your Account SID and Auth Token, and a TwiML App. Confirm your account is upgraded if the trial prevents unverified outbound recipients. Also configure Twilio Voice geographic dialing permissions for **United States only**, and activate a usage budget/alert before making live calls.
+You need a Twilio account with enough credit, a voice capable Twilio US number that you control, an API Key SID + Secret, your Account SID and Auth Token, and a TwiML App. Confirm your account is upgraded if the trial prevents unverified outbound recipients. Configure Twilio Voice geographic dialing permissions for only the supported destinations you intend to call (US, Canada, UK), and activate a usage budget/alert before making live calls.
 
 1. In Twilio Console, create an **API Key**. Copy `TWILIO_API_KEY_SID` (`SK...`) and `TWILIO_API_KEY_SECRET` into `.env.local`.
 2. Copy `TWILIO_ACCOUNT_SID` (`AC...`) and `TWILIO_AUTH_TOKEN` from Twilio Console into `.env.local`.
@@ -65,7 +68,7 @@ You need a Twilio account with enough credit, a voice capable Twilio US number t
 4. In Twilio Console > Voice > TwiML Apps, create an application. Set **Voice Request URL** to the publicly accessible, HTTPS URL `https://YOUR_DOMAIN/api/voice/twiml`. Set **HTTP Method = POST**. Copy the resulting application SID (`AP...`) to `TWILIO_TWIML_APP_SID`.
 5. Set `TWILIO_WEBHOOK_URL` to that **identical** full HTTPS URL. Twilio signatures rely on the URL matching exactly, including any trailing slash or proxy configuration.
 6. Generate the call permit signing secret in PowerShell: `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Copy into `TWILIO_CALL_SIGNING_SECRET`. This is independent from Twilio credentials.
-7. Before the first test, optionally set `TWILIO_ALLOWED_DESTINATIONS=+1...` to the US recipient numbers you own/control for verification.
+7. Before the first test, optionally set `TWILIO_ALLOWED_DESTINATIONS=+1...,+44...` to the supported recipient numbers you own/control for verification.
 8. Once settings, caller ID, dialing permissions, and spend alerts are verified, set `TWILIO_CALLING_ENABLED=true` and restart/redeploy. This is the emergency shutdown switch, set it to `false` to turn off new calls.
 
 ### Public HTTPS requirement
@@ -74,17 +77,25 @@ Twilio cannot call `http://localhost:3000/api/voice/twiml` from its cloud. Deplo
 
 ### First end-to-end test
 
-1. Sign in as an allowlisted Clerk user and visit `/console`.
-2. Allow microphone access in your browser. Enter a real US test number in **+1...** format.
+1. Sign in as an allowlisted Clerk user and visit `/console`. Choose United States (+1), Canada (+1), or United Kingdom (+44). Switching countries clears the previous recipient and sets the new prefix.
+2. Allow microphone access in your browser. Enter a real test number for the selected country. Local numbers and international numbers with spaces, parentheses, or hyphens are normalized before authorization. The number must match the selected country, including US versus Canada.
 3. Click **Place call**, confirm Twilio connects the voice leg, the recipient's phone rings and displays your configured US number, and confirm both parties can hear each other.
 4. Verify mute and hangup. Inspect Twilio Call Logs and actual charges.
 
 The call timer measures the **browser voice session**, not verified PSTN answer time. Do not interpret it as billable duration or recipient answer confirmation.
 
+### Diagnosing failed calls
+
+After the browser session ends, the console reads the operator's own Twilio parent/telephone-child call records and error notifications. It retries briefly for delayed log updates, displays the telephone outcome and error code, and shows the Call SID for support. Account credentials and raw diagnostic payloads stay on the server.
+
+**Twilio 13225 — call blocked:** Recent US attempts on October 12, 2026 failed before the telephone leg connected, with the notification `Phone number is blacklisted`. The account was active and upgraded, US low-risk geographic permission was enabled, and an Individual Primary Customer Profile was approved. A UK telephone call completed for 67 seconds. This confirms a Twilio-side restriction; the logs do not identify the underlying risk or regulatory reason. Contact Twilio Support with a failed parent Call SID and request review of the destination and account's +1 calling eligibility. See [Twilio's 13225 documentation](https://www.twilio.com/docs/api/errors/13225). No account restrictions or permissions were changed during diagnosis.
+
+Supported countries in this application still require permission from Twilio. Enable the geographic permissions for the destinations you intend to call; application validation does not grant carrier access.
+
 ## Security notes and production limitations
 
 - Twilio Account SID, Auth Token, API secrets and call signing key never enter browser JavaScript. The browser receives a 10-minute scoped Voice Access Token (which is usable only with its configured TwiML App) and a 45-second HMAC destination permit.
-- Clerk user IDs are explicitly approved, even after login. The destination is validated against real **US** numbering rules. 900 premium service and 976 exchange patterns are rejected. An optional test-recipient allowlist restricts dialing further.
+- Clerk user IDs are explicitly approved, even after login. The destination is validated against **US, Canadian, and UK** numbering rules. North American 900 premium service and 976 exchange patterns are rejected, along with the configured UK premium, paging, and special-rate ranges. An optional test-recipient allowlist restricts dialing further.
 - The Voice callback validates the Twilio request signature, the Twilio Account SID, the client identity, the signed destination permit, and the destination again. Arbitrary `To` or caller ID values from the browser are never trusted.
 - The origin check on the destination authorization API blocks ordinary cross-origin form submissions, but does not replace Clerk session verification.
 - This is a private **single-operator pilot**, not a hardened multi-tenant contact center. HMAC permits are short-lived but do not have persisted one-time redemption state. There is no durable per-user quota, rate limiting, contact permission enforcement, or real-time billing limit. Keep Twilio's geo permissions restricted and use account usage triggers and a low spend threshold; add durable quotas via Redis/database before scaling to multiple operators or exposing it beyond a private pilot.
@@ -95,10 +106,11 @@ The call timer measures the **browser voice session**, not verified PSTN answer 
 
 ```powershell
 npm run typecheck
+npm test
 npm run lint
 npm run build
 ```
 
-The authoring environment had no access to npm registry, so dependency installation and the full Next.js build could not be completed. Syntax, local imports and CSS parsing were checked locally; **a real Clerk login and Twilio call still need to be tested**.
+The focused tests cover number normalization, country mismatches, premium/allowlist restrictions, diagnostic access control, and parent/child call failure handling. Live records were read without placing calls. A fresh end-to-end browser call after deploying changes still needs verification.
 
 Official docs: [Clerk Next.js](https://clerk.com/docs/nextjs/getting-started/quickstart); [Twilio Voice JS SDK](https://www.twilio.com/docs/voice/sdks/javascript); [Twilio Voice TwiML](https://www.twilio.com/docs/voice/twiml).

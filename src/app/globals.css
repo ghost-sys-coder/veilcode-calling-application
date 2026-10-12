@@ -442,6 +442,16 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .terminal-heading h2 span { color: var(--accent); }
 .terminal-state { font-size: 9px; font-weight: 850; letter-spacing: .09em; white-space: nowrap; color: #64816b; display: inline-flex; align-items: center; gap: 7px; }
 .terminal-state-error .terminal-status-dot, .terminal-state-dialing .terminal-status-dot { background: #f46c4d; }
+.terminal-country-field { display: block; margin-bottom: 24px; }
+.terminal-country-caption { display: block; color: #647367; font-size: 9px; font-weight: 800; letter-spacing: .1em; margin-bottom: 13px; }
+.terminal-country-control { position: relative; display: flex; align-items: center; border: 1px solid #d9dfd6; background: #fafbf7; color: #6c8271; }
+.terminal-country-control > svg:first-child { position: absolute; left: 20px; pointer-events: none; }
+.terminal-country-control > svg:last-child { position: absolute; right: 18px; pointer-events: none; }
+.terminal-country-control select { appearance: none; width: 100%; min-width: 0; min-height: 52px; padding: 12px 44px 12px 52px; border: none; border-radius: 0; background: transparent; color: #23332a; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.terminal-country-control:focus-within { border-color: #7ca080; box-shadow: 0 0 0 3px #dee9df; }
+.terminal-country-control select:disabled { opacity: .5; cursor: not-allowed; }
+.terminal-call-reference { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 14px; color: #647367; font-size: 9px; letter-spacing: .07em; }
+.terminal-call-reference code { font-size: 10px; letter-spacing: 0; user-select: all; overflow-wrap: anywhere; }
 .terminal-number-caption { display: flex; justify-content: space-between; gap: 10px; color: #647367; font-size: 9px; font-weight: 800; letter-spacing: .1em; margin-bottom: 13px; }
 .terminal-number-caption span { color: #b0b7ad; }
 .terminal-number-field { display: flex; align-items: center; gap: 16px; border: 1px solid #d9dfd6; background: #fafbf7; padding: 0 20px; height: 82px; color: #6c8271; }

@@ -1,8 +1,9 @@
 
 import "server-only";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { callingCountries } from "@/lib/calling-countries";
 
-const allowedCountries = new Set(["US", "CA", "GB"]);
+const allowedCountries = new Set<string>(callingCountries.map((country) => country.code));
 
 export function validateCallingDestination(
   value: unknown
