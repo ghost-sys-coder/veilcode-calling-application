@@ -1,0 +1,12 @@
+# VeilCall
+
+VeilCall is a browser calling workspace being developed by VeilCode Studio.
+Website purpose: Explain the product and the planned US outbound calling workflow.
+Current implementation: Public landing page, with a clearly marked interface preview and an unconnected console placeholder.
+Planned Phase 2: Authenticated browser-based outbound calls through Twilio Programmable Voice with a configured authorized US business caller ID.
+Planned later: Call activity, notes, contacts, reporting.
+
+Important: The existing website DOES NOT place phone calls and should not be described as a functioning calling service until Phase 2 is implemented and verified.
+Website home: /
+Private console placeholder: /console
+Company: https://veilcode.studio
