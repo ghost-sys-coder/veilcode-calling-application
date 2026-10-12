@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Call, Device as TwilioDevice } from "@twilio/voice-sdk";
 import { Mic, MicOff, Phone, PhoneOff, Volume2 } from "lucide-react";
 import { CountrySelector } from "@/components/console/country-selector";
+import { CallerIdSelector } from "@/components/console/caller-id-selector";
+import type { CallerIdOption } from "@/lib/caller-id-types";
 import { callingCountries, normalizeDialingNumber, type DialingCountry } from "@/lib/calling-countries";
 import type { VoiceOutcome } from "@/lib/voice-outcome";
 
@@ -19,7 +21,12 @@ const stateLabel: Record<CallState, string> = {
 interface TokenResponse { token?: string; error?: string }
 interface AuthorizationResponse { ticket?: string; error?: string }
 
-export function Dialer({ configured, setupIssues }: { configured: boolean; setupIssues: string[] }) {
+export function Dialer({ configured, setupIssues, callerIds }: {
+  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[];
+}) {
+  const [callerId, setCallerId] = useState(callerIds[0]?.number ?? "");
+  const selectedCaller = callerIds.find((item) => item.number === callerId) ?? callerIds[0];
+  const fromNumber = selectedCaller?.number ?? "";
   const [country, setCountry] = useState<DialingCountry>("US");
   const selectedCountry = callingCountries.find((item) => item.code === country)!;
   const [phone, setPhone] = useState<string>(callingCountries[0].prefix);
@@ -76,6 +83,16 @@ export function Dialer({ configured, setupIssues }: { configured: boolean; setup
     setMessage(`Enter a ${next.name} number to begin.`);
   }
 
+  function changeCallerId(number: string) {
+    if (busyRef.current || number === fromNumber || !callerIds.some((item) => item.number === number)) return;
+    operationRef.current += 1;
+    setCallerId(number);
+    setState("idle");
+    setElapsed(0);
+    setCallSid(null);
+    setMessage(`Calling as ${callerIds.find((item) => item.number === number)!.label}.`);
+  }
+
   async function refreshOutcome(sid: string, operation: number, unavailableMessage?: string) {
     for (let attempt = 0; attempt < 4; attempt += 1) {
       if (!mountedRef.current || operation !== operationRef.current) return;
@@ -123,6 +140,12 @@ export function Dialer({ configured, setupIssues }: { configured: boolean; setup
 
   async function dial() {
     if (!configured || busyRef.current) return;
+    if (!fromNumber) {
+      operationRef.current += 1;
+      setState("error");
+      setMessage("Select an approved calling number to begin.");
+      return;
+    }
     const destination = normalizeDialingNumber(phone, country);
     if (!destination) {
       operationRef.current += 1;
@@ -147,7 +170,7 @@ export function Dialer({ configured, setupIssues }: { configured: boolean; setup
       const authorizationResponse = await fetch("/api/voice/authorize", {
         method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: destination }),
+        body: JSON.stringify({ to: destination, from: fromNumber }),
       });
       const authorization = await authorizationResponse.json() as AuthorizationResponse;
       if (operation !== operationRef.current) return;
@@ -261,6 +284,7 @@ export function Dialer({ configured, setupIssues }: { configured: boolean; setup
       <div className="terminal-heading"><div><div className="terminal-overline">02 / OUTBOUND VOICE</div><h2 id="dialer-title">Make a call<span>.</span></h2></div>
         <span className={`terminal-state terminal-state-${state}`}><span className="terminal-status-dot" />{configured ? stateLabel[state] : "SETUP REQUIRED"}</span>
       </div>
+      <CallerIdSelector callerIds={callerIds} value={fromNumber} disabled={!configured || isBusy} onChange={changeCallerId} />
       <CountrySelector country={country} disabled={!configured || isBusy} onChange={changeCountry} />
       <div className="terminal-number-caption">RECIPIENT PHONE NUMBER <span>{selectedCountry.prefix}</span></div>
       <label className="terminal-number-field"><Phone size={23} strokeWidth={1.6}/><input

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import test from "node:test";
 import ts from "typescript";
+import { createHmac } from "node:crypto";
 
 const require = createRequire(import.meta.url);
 
@@ -155,4 +156,194 @@ test("provider failures return a safe diagnostic response", async () => {
   const response = await statusRoute({ unavailable: true }).get();
   assert.equal(response.status, 503);
   assert.ok(!(await response.text()).includes("private credential"));
+});
+
+const primaryCaller = "+12125550123";
+const secondaryCaller = "+256772123456";
+const signingSecret = "test-only-signing-secret-with-at-least-32-characters";
+const callerIdsModule = loadModule("../src/lib/caller-ids.ts", { "server-only": {} });
+const ticketModule = loadModule("../src/lib/call-ticket.ts", { "server-only": {} });
+
+function withCallerConfig(primary, extra, callback) {
+  const keys = ["TWILIO_PHONE_NUMBER", "TWILIO_CALLER_IDS"];
+  const previous = keys.map((key) => process.env[key]);
+  try {
+    for (const [key, value] of [[keys[0], primary], [keys[1], extra]]) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    return callback();
+  } finally {
+    keys.forEach((key, index) => {
+      if (previous[index] === undefined) delete process.env[key];
+      else process.env[key] = previous[index];
+    });
+  }
+}
+
+test("existing single-number configuration remains the default", () => {
+  withCallerConfig(primaryCaller, undefined, () => {
+    assert.deepEqual(callerIdsModule.getApprovedCallerIds(), [{ number: primaryCaller, label: "Primary business number" }]);
+  });
+});
+
+test("caller IDs support additional countries and primary label customization", () => {
+  withCallerConfig(primaryCaller, JSON.stringify([
+    { number: secondaryCaller, label: "Uganda mobile" },
+    { number: primaryCaller, label: "US business" },
+  ]), () => {
+    const options = callerIdsModule.getApprovedCallerIds();
+    assert.deepEqual(options, [
+      { number: primaryCaller, label: "US business" },
+      { number: secondaryCaller, label: "Uganda mobile" },
+    ]);
+    assert.equal(callerIdsModule.isApprovedCallerId(secondaryCaller, options), true);
+    assert.equal(callerIdsModule.isApprovedCallerId("+442079460123", options), false);
+    assert.equal(callerIdsModule.isApprovedCallerId(null, options), false);
+  });
+});
+
+test("malformed caller configuration fails closed", () => {
+  const invalid = ["not JSON", "{}", "[null]", JSON.stringify([{ number: "0750242627", label: "Mobile" }]),
+    JSON.stringify([{ number: secondaryCaller, label: "" }]),
+    JSON.stringify([{ number: secondaryCaller, label: "A" }, { number: secondaryCaller, label: "B" }])];
+  for (const raw of invalid) {
+    withCallerConfig(primaryCaller, raw, () => {
+      assert.throws(() => callerIdsModule.getApprovedCallerIds(), callerIdsModule.CallerIdConfigurationError);
+    });
+  }
+  withCallerConfig("invalid", "[]", () => {
+    assert.throws(() => callerIdsModule.getApprovedCallerIds(), /TWILIO_PHONE_NUMBER/);
+  });
+});
+
+test("invalid caller configuration disables calling and exposes only the variable name", () => {
+  const config = loadModule("../src/lib/voice-config.ts", {
+    "server-only": {}, "@/lib/caller-ids": callerIdsModule,
+  });
+  withCallerConfig(primaryCaller, "secret-invalid-config", () => {
+    const status = config.getVoiceConfigStatus();
+    assert.equal(status.ready, false);
+    assert.ok(status.missing.includes("TWILIO_CALLER_IDS"));
+    assert.ok(!JSON.stringify(status).includes("secret-invalid-config"));
+    assert.throws(() => config.getVoiceConfig());
+  });
+});
+
+test("call permits bind the operator, recipient, and selected caller ID", () => {
+  const signed = ticketModule.signCallTicket("user_operator", "+442079460123", secondaryCaller, signingSecret);
+  const payload = ticketModule.verifyCallTicket(signed, signingSecret);
+  assert.equal(payload.sub, "user_operator");
+  assert.equal(payload.to, "+442079460123");
+  assert.equal(payload.from, secondaryCaller);
+  const [encoded, signature] = signed.split(".");
+  const tampered = JSON.parse(Buffer.from(encoded, "base64url").toString());
+  tampered.from = primaryCaller;
+  const changed = Buffer.from(JSON.stringify(tampered)).toString("base64url");
+  assert.equal(ticketModule.verifyCallTicket(`${changed}.${signature}`, signingSecret), null);
+});
+
+test("permits without a caller ID and expired permits are rejected", (context) => {
+  const signed = ticketModule.signCallTicket("user_operator", "+442079460123", primaryCaller, signingSecret);
+  const payload = ticketModule.verifyCallTicket(signed, signingSecret);
+  const legacy = { ...payload };
+  delete legacy.from;
+  const encoded = Buffer.from(JSON.stringify(legacy)).toString("base64url");
+  const signature = createHmac("sha256", signingSecret).update(encoded).digest("base64url");
+  assert.equal(ticketModule.verifyCallTicket(`${encoded}.${signature}`, signingSecret), null);
+  context.mock.method(Date, "now", () => (payload.exp + 1) * 1000);
+  assert.equal(ticketModule.verifyCallTicket(signed, signingSecret), null);
+});
+
+const approvedCallers = [
+  { number: primaryCaller, label: "Primary" },
+  { number: secondaryCaller, label: "Uganda mobile" },
+];
+const voiceConfig = {
+  accountSid: `AC${"c".repeat(32)}`, authToken: "test-auth-token", webhookUrl: "https://example.test/api/voice/twiml",
+  fromNumber: primaryCaller, callerIds: approvedCallers, signingSecret,
+};
+
+function authorizeRoute({ userId = "user_operator", approved = true } = {}) {
+  const route = loadModule("../src/app/api/voice/authorize/route.ts", {
+    "@clerk/nextjs/server": { auth: async () => ({ userId }) },
+    "@/lib/access": { isApprovedOperator: () => approved },
+    "@/lib/call-ticket": ticketModule,
+    "@/lib/caller-ids": callerIdsModule,
+    "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
+    "@/lib/voice-config": { getVoiceConfig: () => voiceConfig },
+    "@/lib/voice-responses": {
+      voiceJson: (data, status = 200) => Response.json(data, { status }),
+      isSameOrigin: (request) => request.headers.get("origin") === new URL(request.url).origin,
+    },
+  });
+  return (body, origin = "https://example.test") => route.POST(new Request("https://example.test/api/voice/authorize", {
+    method: "POST", headers: { "content-type": "application/json", origin }, body: JSON.stringify(body),
+  }));
+}
+
+test("authorization mints a permit for the selected caller and defaults older clients to primary", async () => {
+  for (const from of [secondaryCaller, undefined]) {
+    const response = await authorizeRoute()({ to: "+442079460123", from });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.callerId, from ?? primaryCaller);
+    assert.equal(ticketModule.verifyCallTicket(body.ticket, signingSecret).from, from ?? primaryCaller);
+  }
+});
+
+test("authorization refuses arbitrary and malformed caller IDs", async () => {
+  for (const from of ["+442079460123", "", null, 123, { number: primaryCaller }]) {
+    const response = await authorizeRoute()({ to: "+442079460123", from });
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).ticket, undefined);
+  }
+});
+
+test("multi-number authorization retains session, operator and origin checks", async () => {
+  const body = { to: "+442079460123", from: secondaryCaller };
+  assert.equal((await authorizeRoute({ userId: null })(body)).status, 401);
+  assert.equal((await authorizeRoute({ approved: false })(body)).status, 403);
+  assert.equal((await authorizeRoute()(body, "https://other.test")).status, 403);
+});
+
+function webhookRoute(config = voiceConfig) {
+  const route = loadModule("../src/app/api/voice/twiml/route.ts", {
+    "@/lib/call-ticket": ticketModule,
+    "@/lib/caller-ids": callerIdsModule,
+    "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
+    "@/lib/voice-config": { getVoiceConfig: () => config },
+  });
+  return (ticket, overrides = {}, validSignature = true) => {
+    const params = { AccountSid: config.accountSid, From: "client:user_operator", Ticket: ticket, ...overrides };
+    const signature = require("twilio").getExpectedTwilioSignature(config.authToken, config.webhookUrl, params);
+    return route.POST(new Request(config.webhookUrl, {
+      method: "POST", headers: { "X-Twilio-Signature": validSignature ? signature : "invalid" },
+      body: new URLSearchParams(params),
+    }));
+  };
+}
+
+test("TwiML uses only the caller and recipient from the signed permit", async () => {
+  const ticket = ticketModule.signCallTicket("user_operator", "+442079460123", secondaryCaller, signingSecret);
+  const response = await webhookRoute()(ticket, { CallerId: primaryCaller, To: "+14165550123" });
+  assert.equal(response.status, 200);
+  const xml = await response.text();
+  assert.match(xml, new RegExp(`callerId="\\${secondaryCaller}"`));
+  assert.ok(xml.includes("<Number>+442079460123</Number>"));
+  assert.ok(!xml.includes(primaryCaller));
+  assert.ok(!xml.includes("+14165550123"));
+});
+
+test("TwiML refuses a caller removed from the server allowlist after permit issuance", async () => {
+  const ticket = ticketModule.signCallTicket("user_operator", "+442079460123", secondaryCaller, signingSecret);
+  const response = await webhookRoute({ ...voiceConfig, callerIds: [approvedCallers[0]] })(ticket);
+  assert.equal(response.status, 403);
+});
+
+test("TwiML retains Twilio signature, account and operator identity validation", async () => {
+  const ticket = ticketModule.signCallTicket("user_operator", "+442079460123", primaryCaller, signingSecret);
+  assert.equal((await webhookRoute()(ticket, {}, false)).status, 403);
+  assert.equal((await webhookRoute()(ticket, { AccountSid: `AC${"d".repeat(32)}` })).status, 403);
+  assert.equal((await webhookRoute()(ticket, { From: "client:user_other" })).status, 403);
 });

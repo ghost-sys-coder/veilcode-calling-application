@@ -1,12 +1,15 @@
 import { ArrowUpRight, Headphones, LockKeyhole, Signal, Shield, Zap } from "lucide-react";
 import { Dialer } from "@/components/console/dialer";
+import type { CallerIdOption } from "@/lib/caller-id-types";
 
-export function CallWorkspace({ configured, setupIssues }: { configured: boolean; setupIssues: string[] }) {
+export function CallWorkspace({ configured, setupIssues, callerIds }: {
+  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[];
+}) {
   return <div className="dialer-page">
     <div className="shell dialer-title-row">
       <div><p className="dialer-eyebrow"><span className="dialer-blink" /> VEILCALL / VOICE TERMINAL 001</p>
       <h1>Good conversations <em>start here.</em></h1>
-      <p>Call contacts in the US, Canada, and UK with your configured Twilio business number.</p></div>
+      <p>Call contacts in the US, Canada, and UK using one of your approved calling numbers.</p></div>
       <div className="dialer-title-mark"><Signal size={22}/><span>UGANDA <ArrowUpRight size={16}/> US / CANADA / UK</span></div>
     </div>
     <div className="shell dialer-grid">
@@ -20,7 +23,7 @@ export function CallWorkspace({ configured, setupIssues }: { configured: boolean
         <div className="dialer-aside-fact"><Zap size={18}/><span><strong>US, Canada &amp; UK</strong>Validated before calling</span></div>
         <span className="dialer-aside-foot">BUILT BY VEILCODE STUDIO <ArrowUpRight size={15}/></span>
       </aside>
-      <Dialer configured={configured} setupIssues={setupIssues} />
+      <Dialer configured={configured} setupIssues={setupIssues} callerIds={callerIds} />
     </div>
     <div className="shell dialer-footnote">Use the service only for lawful outreach. Recipient consent, telemarketing rules, and Twilio charges remain your responsibility.</div>
   </div>;

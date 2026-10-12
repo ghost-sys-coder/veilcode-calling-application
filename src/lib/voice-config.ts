@@ -1,4 +1,6 @@
 import "server-only";
+import { CallerIdConfigurationError, getApprovedCallerIds } from "@/lib/caller-ids";
+import type { CallerIdOption } from "@/lib/caller-id-types";
 
 const required = [
   "TWILIO_ACCOUNT_SID",
@@ -12,11 +14,17 @@ const required = [
 ] as const;
 
 export function getVoiceConfigStatus() {
-  const missing = required.filter((key) => !process.env[key]?.trim());
+  const missing: string[] = required.filter((key) => !process.env[key]?.trim());
+  let callerIds: CallerIdOption[] = [];
+  try { callerIds = getApprovedCallerIds(); }
+  catch (error) {
+    if (!(error instanceof CallerIdConfigurationError)) throw error;
+    if (!missing.includes(error.variable)) missing.push(error.variable);
+  }
   const enabled = process.env.TWILIO_CALLING_ENABLED === "true";
   const signingSecretValid = (process.env.TWILIO_CALL_SIGNING_SECRET?.length ?? 0) >= 32;
   if (!signingSecretValid && !missing.includes("TWILIO_CALL_SIGNING_SECRET")) missing.push("TWILIO_CALL_SIGNING_SECRET");
-  return { ready: missing.length === 0 && enabled, enabled, missing };
+  return { ready: missing.length === 0 && enabled, enabled, missing, callerIds };
 }
 
 export function getVoiceConfig() {
@@ -30,7 +38,8 @@ export function getVoiceConfig() {
     apiKeySecret: process.env.TWILIO_API_KEY_SECRET!,
     authToken: process.env.TWILIO_AUTH_TOKEN!,
     applicationSid: process.env.TWILIO_TWIML_APP_SID!,
-    fromNumber: process.env.TWILIO_PHONE_NUMBER!,
+    fromNumber: status.callerIds[0].number,
+    callerIds: status.callerIds,
     signingSecret,
     webhookUrl: process.env.TWILIO_WEBHOOK_URL!,
   };

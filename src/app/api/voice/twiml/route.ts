@@ -1,5 +1,6 @@
 import twilio from "twilio";
 import { verifyCallTicket } from "@/lib/call-ticket";
+import { isApprovedCallerId } from "@/lib/caller-ids";
 import { validateCallingDestination } from "@/lib/destination";
 import { getVoiceConfig } from "@/lib/voice-config";
 
@@ -25,17 +26,18 @@ export async function POST(request: Request) {
     return new Response("Invalid Twilio signature", { status: 403 });
   }
   const ticket = params.Ticket ? verifyCallTicket(params.Ticket, config.signingSecret) : null;
-  // Bind the signed destination permit to the same SDK identity that created it.
+  // Bind the signed call permit to its SDK identity and currently approved caller ID.
   if (
     !ticket ||
     params.AccountSid !== config.accountSid ||
     params.From !== `client:${ticket.sub}` ||
-    !validateCallingDestination(ticket.to)
+    !validateCallingDestination(ticket.to) ||
+    !isApprovedCallerId(ticket.from, config.callerIds)
   ) {
     return new Response("Call permission expired or invalid", { status: 403 });
   }
   const response = new twilio.twiml.VoiceResponse();
-  const dial = response.dial({ callerId: config.fromNumber, answerOnBridge: true, timeout: 30 });
+  const dial = response.dial({ callerId: ticket.from, answerOnBridge: true, timeout: 30 });
   dial.number(ticket.to);
   return new Response(response.toString(), {
     status: 200,

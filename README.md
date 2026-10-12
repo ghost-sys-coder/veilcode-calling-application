@@ -22,13 +22,15 @@ src/
     auth/auth-shell.tsx
     console/call-workspace.tsx
     console/console-header.tsx
+    console/caller-id-selector.tsx        approved outgoing caller numbers
     console/dialer.tsx
     console/unauthorized.tsx
     landing/...                          original modular landing design
     ui/button.tsx
   lib/
     access.ts                             allowlisted Clerk IDs
-    call-ticket.ts                        HMAC signed, short-lived dial permit
+    call-ticket.ts                        HMAC signed operator, destination, and caller ID permit
+    caller-ids.ts                         server-approved outgoing caller ID registry
     calling-countries.ts                  shared country options and input normalization
     destination.ts                        permitted US, Canadian, and UK destinations
     voice-outcome.ts                      safe call outcome and error descriptions
@@ -64,7 +66,7 @@ You need a Twilio account with enough credit, a voice capable Twilio US number t
 
 1. In Twilio Console, create an **API Key**. Copy `TWILIO_API_KEY_SID` (`SK...`) and `TWILIO_API_KEY_SECRET` into `.env.local`.
 2. Copy `TWILIO_ACCOUNT_SID` (`AC...`) and `TWILIO_AUTH_TOKEN` from Twilio Console into `.env.local`.
-3. Set `TWILIO_PHONE_NUMBER` to your Twilio owned, voice enabled US phone number in E.164 format, such as `+12125550123`. This is the **only** outbound caller ID. A number you do not own or have permission to use cannot be substituted.
+3. Set `TWILIO_PHONE_NUMBER` to your primary Twilio-owned, voice-enabled number in E.164 format, such as `+12125550123`. It stays the default outbound caller ID. To enable additional Twilio-owned or verified outgoing caller IDs, follow the configuration below. A number you do not control or have permission to use cannot be substituted.
 4. In Twilio Console > Voice > TwiML Apps, create an application. Set **Voice Request URL** to the publicly accessible, HTTPS URL `https://YOUR_DOMAIN/api/voice/twiml`. Set **HTTP Method = POST**. Copy the resulting application SID (`AP...`) to `TWILIO_TWIML_APP_SID`.
 5. Set `TWILIO_WEBHOOK_URL` to that **identical** full HTTPS URL. Twilio signatures rely on the URL matching exactly, including any trailing slash or proxy configuration.
 6. Generate the call permit signing secret in PowerShell: `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Copy into `TWILIO_CALL_SIGNING_SECRET`. This is independent from Twilio credentials.
@@ -75,9 +77,26 @@ You need a Twilio account with enough credit, a voice capable Twilio US number t
 
 Twilio cannot call `http://localhost:3000/api/voice/twiml` from its cloud. Deploy this project to Vercel with your domain or expose a temporary HTTPS development tunnel. A TwiML App URL configured as a tunnel address must match `TWILIO_WEBHOOK_URL`, then change it when deploying to the permanent domain. Set `NEXT_PUBLIC_SITE_URL` to the production HTTPS site URL and set the Clerk production keys as needed.
 
+### Multiple outgoing caller numbers
+
+The console's **Call from** selector lists only numbers in the server configuration. `TWILIO_PHONE_NUMBER` remains the default; existing single-number installations work without extra configuration. Add more approved identities in `TWILIO_CALLER_IDS` as a JSON array of labels and E.164 numbers:
+
+```dotenv
+TWILIO_PHONE_NUMBER=+12125550123
+TWILIO_CALLER_IDS='[{"label":"UK sales","number":"+442079460123"},{"label":"Uganda mobile","number":"+256772123456"}]'
+```
+
+These are illustrative numbers. Each additional number must actually be voice-enabled and owned by the same Twilio account, or verified there as an outgoing caller ID. See [Twilio's verified caller ID documentation](https://www.twilio.com/docs/voice/api/outgoing-caller-ids). Verification does not move a non-Twilio number's incoming calls into this app.
+
+You may include the primary number in the JSON list to customize its label; it remains first and is not duplicated. Invalid numbers, empty/overlong labels, duplicate entries, malformed JSON, or more than 50 entries disable calling and show the configuration variable name. An empty array means only the primary number is available.
+
+Choose **Call from** separately from the destination country. Changing it preserves the recipient; both selectors lock while preparing or making a call. The chosen caller ID is checked on the server, included in the 45-second signed permit, checked against current configuration again by the Twilio webhook, and used in TwiML. Arbitrary browser-supplied caller IDs cannot override it.
+
+For local development, restart the app after changing the environment. For production, set `TWILIO_CALLER_IDS` in your hosting environment and redeploy; a local `.env` change does not update Vercel. This feature does not remove Twilio's destination restrictions or customer-profile requirements.
+
 ### First end-to-end test
 
-1. Sign in as an allowlisted Clerk user and visit `/console`. Choose United States (+1), Canada (+1), or United Kingdom (+44). Switching countries clears the previous recipient and sets the new prefix.
+1. Sign in as an allowlisted Clerk user and visit `/console`. Select the outgoing number under **Call from**, then choose United States (+1), Canada (+1), or United Kingdom (+44) as the destination country. Switching countries clears the previous recipient and sets the new prefix.
 2. Allow microphone access in your browser. Enter a real test number for the selected country. Local numbers and international numbers with spaces, parentheses, or hyphens are normalized before authorization. The number must match the selected country, including US versus Canada.
 3. Click **Place call**, confirm Twilio connects the voice leg, the recipient's phone rings and displays your configured US number, and confirm both parties can hear each other.
 4. Verify mute and hangup. Inspect Twilio Call Logs and actual charges.
@@ -96,7 +115,7 @@ Supported countries in this application still require permission from Twilio. En
 
 - Twilio Account SID, Auth Token, API secrets and call signing key never enter browser JavaScript. The browser receives a 10-minute scoped Voice Access Token (which is usable only with its configured TwiML App) and a 45-second HMAC destination permit.
 - Clerk user IDs are explicitly approved, even after login. The destination is validated against **US, Canadian, and UK** numbering rules. North American 900 premium service and 976 exchange patterns are rejected, along with the configured UK premium, paging, and special-rate ranges. An optional test-recipient allowlist restricts dialing further.
-- The Voice callback validates the Twilio request signature, the Twilio Account SID, the client identity, the signed destination permit, and the destination again. Arbitrary `To` or caller ID values from the browser are never trusted.
+- The Voice callback validates the Twilio request signature, the Twilio Account SID, the client identity, the signed operator/destination/caller-ID permit, and the destination and caller ID again. Arbitrary `To` or caller ID values from the browser are never trusted.
 - The origin check on the destination authorization API blocks ordinary cross-origin form submissions, but does not replace Clerk session verification.
 - This is a private **single-operator pilot**, not a hardened multi-tenant contact center. HMAC permits are short-lived but do not have persisted one-time redemption state. There is no durable per-user quota, rate limiting, contact permission enforcement, or real-time billing limit. Keep Twilio's geo permissions restricted and use account usage triggers and a low spend threshold; add durable quotas via Redis/database before scaling to multiple operators or exposing it beyond a private pilot.
 - Sales calls can be restricted by US telemarketing, Do Not Call, time-of-day, consent and caller identification rules, depending on the destination and outreach method. Do not assume a displayed US number exempts you from these rules. Call recording is intentionally omitted.
@@ -111,6 +130,6 @@ npm run lint
 npm run build
 ```
 
-The focused tests cover number normalization, country mismatches, premium/allowlist restrictions, diagnostic access control, and parent/child call failure handling. Live records were read without placing calls. A fresh end-to-end browser call after deploying changes still needs verification.
+The focused tests cover number normalization, country mismatches, premium/allowlist restrictions, diagnostic access control, parent/child call failures, caller-ID configuration, signed caller-ID binding, and authorization/webhook enforcement. Live records were read without placing calls. A fresh end-to-end browser call after deploying changes still needs verification.
 
 Official docs: [Clerk Next.js](https://clerk.com/docs/nextjs/getting-started/quickstart); [Twilio Voice JS SDK](https://www.twilio.com/docs/voice/sdks/javascript); [Twilio Voice TwiML](https://www.twilio.com/docs/voice/twiml).

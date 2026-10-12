@@ -1,17 +1,18 @@
 import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-type CallTicket = { sub: string; to: string; iat: number; exp: number; nonce: string };
+type CallTicket = { sub: string; to: string; from: string; iat: number; exp: number; nonce: string };
 
 function signature(value: string, secret: string): Buffer {
   return createHmac("sha256", secret).update(value).digest();
 }
 
-export function signCallTicket(userId: string, destination: string, secret: string): string {
+export function signCallTicket(userId: string, destination: string, callerId: string, secret: string): string {
   const now = Math.floor(Date.now() / 1000);
   const payload: CallTicket = {
     sub: userId,
     to: destination,
+    from: callerId,
     iat: now,
     exp: now + 45,
     nonce: randomBytes(16).toString("hex"),
@@ -36,6 +37,7 @@ export function verifyCallTicket(ticket: string, secret: string): CallTicket | n
     if (
       typeof call.sub !== "string" || !call.sub.startsWith("user_") ||
       typeof call.to !== "string" ||
+      typeof call.from !== "string" || !/^\+[1-9]\d{1,14}$/.test(call.from) ||
       typeof call.iat !== "number" ||
       typeof call.exp !== "number" ||
       typeof call.nonce !== "string" ||

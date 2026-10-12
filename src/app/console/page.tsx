@@ -18,5 +18,5 @@ export default async function ConsolePage() {
   if (!userId) redirect("/sign-in?redirect_url=%2Fconsole");
   if (!isApprovedOperator(userId)) return <Unauthorized userId={userId} />;
   const status = getVoiceConfigStatus();
-  return <><ConsoleHeader/><main><CallWorkspace configured={status.ready} setupIssues={status.missing}/></main></>;
+  return <><ConsoleHeader/><main><CallWorkspace configured={status.ready} setupIssues={status.missing} callerIds={status.callerIds}/></main></>;
 }

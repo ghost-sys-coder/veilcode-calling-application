@@ -450,6 +450,7 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .terminal-country-control select { appearance: none; width: 100%; min-width: 0; min-height: 52px; padding: 12px 44px 12px 52px; border: none; border-radius: 0; background: transparent; color: #23332a; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
 .terminal-country-control:focus-within { border-color: #7ca080; box-shadow: 0 0 0 3px #dee9df; }
 .terminal-country-control select:disabled { opacity: .5; cursor: not-allowed; }
+.terminal-caller-hint { display: block; margin-top: 9px; color: #647367; font-size: 11px; line-height: 1.5; }
 .terminal-call-reference { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 14px; color: #647367; font-size: 9px; letter-spacing: .07em; }
 .terminal-call-reference code { font-size: 10px; letter-spacing: 0; user-select: all; overflow-wrap: anywhere; }
 .terminal-number-caption { display: flex; justify-content: space-between; gap: 10px; color: #647367; font-size: 9px; font-weight: 800; letter-spacing: .1em; margin-bottom: 13px; }

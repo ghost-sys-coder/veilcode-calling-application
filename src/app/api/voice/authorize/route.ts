@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { isApprovedOperator } from "@/lib/access";
 import { signCallTicket } from "@/lib/call-ticket";
+import { isApprovedCallerId } from "@/lib/caller-ids";
 import { validateCallingDestination } from "@/lib/destination";
 import { getVoiceConfig } from "@/lib/voice-config";
 import { isSameOrigin, voiceJson } from "@/lib/voice-responses";
@@ -20,8 +21,17 @@ export async function POST(request: Request) {
   const destination = validateCallingDestination((body as { to?: unknown } | null)?.to);
   if (!destination) return voiceJson({ error: "Enter a valid US, Canadian, or UK number in international format." }, 400);
   try {
-    const { signingSecret } = getVoiceConfig();
-    return voiceJson({ ticket: signCallTicket(userId, destination, signingSecret), destination });
+    const config = getVoiceConfig();
+    const requestedCallerId = (body as { from?: unknown } | null)?.from;
+    // Older clients without a selection retain the server's primary caller ID.
+    const callerId = requestedCallerId === undefined ? config.fromNumber : requestedCallerId;
+    if (!isApprovedCallerId(callerId, config.callerIds)) {
+      return voiceJson({ error: "Select an approved calling number." }, 403);
+    }
+    return voiceJson({
+      ticket: signCallTicket(userId, destination, callerId, config.signingSecret),
+      destination, callerId,
+    });
   } catch {
     return voiceJson({ error: "Twilio calling has not been configured." }, 503);
   }
