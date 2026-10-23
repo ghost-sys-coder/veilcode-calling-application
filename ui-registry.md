@@ -2,6 +2,10 @@
 
 Use the existing shadcn components and shared warm editorial theme. Main surfaces use `--background`, panels `--card`, and dialogs `--popover`; text uses `--foreground` and supporting text `--muted-foreground`. Borders use `--border`, with the sidebar using `--sidebar-border`. Primary actions use `--primary` and destructive states `--destructive`.
 
+## CSV import
+
+Compose the existing shadcn Dialog, AlertDialog, Input file field, NativeSelect, Label, Table, and Button. Use a scrolling opaque dialog, 1rem field gaps, .75rem muted hints, and the existing contact person/number patterns. Mapping selects use a different source-column index for each field, with labels above controls. The preview table scrolls within the dialog and paginates 50 records at a time. Use the destructive token for invalid rows and the primary token for ready/imported rows. Results use text labels as well as color.
+
 ## Dashboard
 
 Use the official shadcn Card for metrics and panels, NativeSelect for the activity period, Skeleton for loading, Table for recent calls, and Button links for actions. Metric cards use .5rem corner radii, no shadow, 1.2rem padding, .78rem muted labels, large medium-weight values, and .7rem sample captions. Panel titles use 1.15rem medium text with .58rem spaced overlines. Callbacks reuse muted supporting text and the shared destructive token for overdue indicators. Empty and error states describe missing data explicitly.

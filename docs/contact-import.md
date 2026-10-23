@@ -1,0 +1,17 @@
+# CSV contact import
+
+Open Contacts → Import CSV. Download the template or choose a UTF-8 CSV with a header. The importer accepts comma, semicolon, or tab delimiters, quoted commas, escaped quotes, multiline notes, and a UTF-8 BOM. Empty records are ignored. Limits are 500 data records, 512 KB, and 30 source columns. `_veilcall_record` and `_veilcall_reason` are reserved report columns and do not count against the source-column limit.
+
+Map a different column to each field. Name and phone are required; company, country, and notes are optional. Recognized headers are suggested, with column numbers disambiguating repeated/blank headers. Blank/unmapped country values use the selected default. Supported country aliases include US/USA/United States, CA/CAN/Canada, GB/GBR/UK/United Kingdom/Great Britain, and AU/AUS/Australia. Country and phone must agree, including the shared US/Canada +1 prefix.
+
+Preview validates the same name, company, phone, country, and note constraints as manual contacts. Phones normalize to E.164. Only valid rows participate in same-file duplicate detection; the first valid occurrence wins. Existing numbers are checked only in the current operator's address book. A preview never writes contacts. Record numbers count nonempty CSV records including the header as record 1; multiline fields do not increment the record number.
+
+The Import button sends only the ready record numbers from that preview. The server reparses and revalidates the original file and mappings, checks existing numbers again, and inserts only the selected ready rows in one atomic SQL statement. Concurrent duplicates are skipped by the existing unique constraint. Existing names, notes, and other contact fields are never overwritten. If a response is lost, retrying is safe; already-created numbers will be reported as duplicates, so check Contacts to confirm prior success.
+
+Download rejected rows before or after importing. It retains original source columns and adds/updates `_veilcall_record` and `_veilcall_reason`. The exported file escapes spreadsheet-formula prefixes (including whitespace before a formula) with an apostrophe. A leading apostrophe before an international phone is accepted when reimporting a spreadsheet-safe report or template. Other escaped values remain literal text. Uneven records are rejected; extra cells are retained under generated `_extra_column_N` headers for correction. Files with more than 32 cells in a record must be corrected before previewing.
+
+Closing an unsaved import asks before clearing the file and preview. The dialog stays open after import to show results. Import another file resets the flow. New contacts are private to the authenticated operator. Existing Clerk allowlist, same-origin checks, no-store responses, parameterized SQL, request size bounds, and contact ownership rules remain in force. Files stay in browser memory and the request; no file object storage is introduced.
+
+No migrations or environment variables are required. Papa Parse is the shared CSV parser; the UI is composed from existing shadcn components and loads when the import dialog is opened. Next.js is unchanged.
+
+Validation: `npm test`, lint, typecheck, build. `node scripts/check-contact-import-storage.mjs` verifies atomic inserts, owner isolation, duplicate handling, safe retries, and original data preservation in a rolled-back transaction. Set `CONTACT_IMPORT_TEST_HOST` to an isolated Neon validation branch hostname to test a branch using local credentials.

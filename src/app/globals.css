@@ -3,6 +3,35 @@
 @import "tw-animate-css";
 @import "@clerk/ui/themes/shadcn.css";
 
+.contacts-title-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+.contact-import-dialog { width: calc(100vw - 2rem); max-width: 68rem; max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.contact-import-intro,.contact-import-summary { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.contact-import-intro p,.contact-import-hint { font-size: .75rem; color: var(--muted-foreground); line-height: 1.6; }
+.contact-import-fields { display: grid; gap: 1rem; min-width: 0; }
+.contact-import-fields > div:first-child { display: grid; gap: .5rem; }
+.contact-import-mapping { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; }
+.contact-import-mapping > div { display: grid; gap: .5rem; min-width: 0; align-content: start; }
+.contact-import-mapping [data-slot="native-select-wrapper"] { width: 100%; }
+.contact-import-mapping select { text-overflow: ellipsis; }
+.contact-import-file { font-size: .8rem; overflow-wrap: anywhere; }
+.contact-import-fields > button { justify-self: start; }
+.contact-import-status { font-size: .85rem; line-height: 1.6; font-weight: 500; }
+.contact-import-status:empty { display: none; }
+.contact-import-preview { min-width: 0; display: grid; gap: 1rem; }
+.contact-import-preview [data-slot="table-container"] { max-height: 22rem; overflow: auto; }
+.contact-import-preview thead { position: sticky; top: 0; background: var(--background); z-index: 1; }
+.contact-import-preview th { color: var(--muted-foreground); font-size: .7rem; font-weight: 500; }
+.contact-import-preview td { font-size: .78rem; vertical-align: top; padding-block: .8rem; }
+.contact-import-summary h3 { font-size: 1rem; font-weight: 550; }
+.contact-import-note { max-width: 12rem; min-width: 7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-import-result { display: grid; gap: .3rem; min-width: 9rem; max-width: 16rem; white-space: normal; }
+.contact-import-result strong { font-weight: 550; color: var(--primary); }
+.contact-import-result [data-status="invalid"] { color: var(--destructive); }
+.contact-import-result span { color: var(--muted-foreground); font-size: .73rem; line-height: 1.5; }
+.contact-import-pagination { display: flex; align-items: center; justify-content: end; gap: .8rem; font-size: .75rem; }
+@media (max-width: 760px) { .contact-import-mapping { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 480px) { .contact-import-mapping { grid-template-columns: minmax(0,1fr); } .contact-import-dialog { padding: 1rem; } .contact-import-intro { gap: .4rem; } }
+
 .dashboard-page { padding-bottom: 3rem; }
 .dashboard-title h1 { line-height: 1.06; }
 .dashboard-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin: 1.8rem 0; }

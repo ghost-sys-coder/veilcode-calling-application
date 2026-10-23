@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Pencil, Phone, Plus, Search, Trash2, Users } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Pencil, Phone, Plus, Search, Trash2, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,6 +12,8 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { ContactFormDialog } from "@/components/console/contact-form-dialog";
 import { callingCountries } from "@/lib/calling-countries";
 import type { Contact, ContactPage } from "@/lib/contact-types";
+
+const ContactImportDialog=dynamic(()=>import("@/components/console/contact-import-dialog").then((module)=>module.ContactImportDialog));
 
 export function ContactsWorkspace({configured}:{configured:boolean}) {
   const [items,setItems]=useState<Contact[]>([]);
@@ -25,6 +28,7 @@ export function ContactsWorkspace({configured}:{configured:boolean}) {
   const [editor,setEditor]=useState<{contact:Contact | null} | null>(null);
   const [deleting,setDeleting]=useState<Contact | null>(null);
   const [deleteBusy,setDeleteBusy]=useState(false);
+  const [importing,setImporting]=useState(false);
 
   useEffect(()=>{
     if (!configured) return;
@@ -45,7 +49,7 @@ export function ContactsWorkspace({configured}:{configured:boolean}) {
 
   return <div className="contacts-page shell">
     <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / ADDRESS BOOK</p><h1>People, remembered<span>.</span></h1><p>Keep the right number and a little context close at hand.</p></div>
-      <Button disabled={!configured || busy} onClick={()=>{setMessage("");setEditor({contact:null});}}><Plus aria-hidden="true"/> New contact</Button>
+      <div className="contacts-title-actions"><Button variant="outline" disabled={!configured || busy} onClick={()=>{setMessage("");setImporting(true);}}><Upload aria-hidden="true"/> Import CSV</Button><Button disabled={!configured || busy} onClick={()=>{setMessage("");setEditor({contact:null});}}><Plus aria-hidden="true"/> New contact</Button></div>
     </div>
     <form className="contacts-search" role="search" onSubmit={(event)=>{event.preventDefault();setLoading(true);setError("");setQuery(search.trim());setRevision((value)=>value+1);}}>
       <div><Search size={17} aria-hidden="true"/><Input aria-label="Search contacts" placeholder="Search by name, company, or number" maxLength={120} value={search} disabled={!configured || busy} onChange={(event)=>setSearch(event.target.value)}/></div>
@@ -82,6 +86,7 @@ export function ContactsWorkspace({configured}:{configured:boolean}) {
     {editor && <ContactFormDialog key={editor.contact?.id ?? "new"} contact={editor.contact} onClose={()=>setEditor(null)} onSaved={(contact)=>{
       setEditor(null);setMessage(`${contact.name} saved.`);setSearch("");setQuery("");reload();
     }}/>}
+    {importing && <ContactImportDialog onClose={()=>setImporting(false)} onImportUncertain={reload} onImported={(count)=>{setMessage(`${count} contacts imported.`);setSearch("");setQuery("");reload();}}/>}
     <AlertDialog open={deleting !== null} onOpenChange={(open)=>{if (!open && !deleteBusy) setDeleting(null);}}>
       <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {deleting?.name}?</AlertDialogTitle><AlertDialogDescription>This permanently removes this contact and their contact notes. Past call history and call review notes remain.</AlertDialogDescription></AlertDialogHeader>
         <AlertDialogFooter><AlertDialogCancel disabled={deleteBusy}>Cancel</AlertDialogCancel><Button variant="destructive" disabled={deleteBusy} onClick={async()=>{

@@ -12,6 +12,8 @@ The console uses a responsive shadcn sidebar and shared form/dialog components. 
 
 The private [Contacts directory](docs/contacts.md) adds searchable names, numbers, companies, and notes, with safe dialer prefill. It uses the existing database and needs no new environment variables.
 
+[CSV contact import](docs/contact-import.md) adds column mapping, previews, duplicate checks, and rejected-row downloads for batches of up to 500 contacts.
+
 [Call outcomes and follow-ups](docs/followups.md) add business outcomes, callback dates and notes, an overdue/upcoming/completed queue, and callback dialer prefill. They use the same database with migration `003_call_followups.sql`.
 
 The [outreach dashboard](docs/dashboard.md) summarizes call activity, connection rate, interested prospects, today's callbacks, and quality ratings, with direct links to reviews and the dialer. It uses existing storage without new environment variables or migrations.
