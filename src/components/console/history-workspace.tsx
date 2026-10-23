@@ -8,13 +8,13 @@ import { ArrowUpRight, Headphones, PhoneOutgoing, RefreshCw } from "lucide-react
 import { CallReviewPanel } from "@/components/console/call-review-panel";
 import type { CallReview } from "@/lib/review-types";
 
-export function HistoryWorkspace({ configured }: { configured:boolean }) {
-  const [items,setItems] = useState<CallReview[]>([]);
-  const [selected,setSelected] = useState<string | null>(null);
+export function HistoryWorkspace({ configured,initialCall,initialError }: { configured:boolean;initialCall?:CallReview;initialError?:string }) {
+  const [items,setItems] = useState<CallReview[]>(initialCall ? [initialCall] : []);
+  const [selected,setSelected] = useState<string | null>(initialCall?.callSid ?? null);
   const [nextCursor,setNextCursor] = useState<string | null>(null);
   const [loading,setLoading] = useState(configured);
   const [syncing,setSyncing] = useState(false);
-  const [error,setError] = useState("");
+  const [error,setError] = useState(initialError ?? "");
   const [dirty,setDirty] = useState(false);
   const [pendingCall,setPendingCall] = useState<string | null>(null);
   const load = useCallback(async (cursor?:string,signal?:AbortSignal) => {
@@ -22,11 +22,12 @@ export function HistoryWorkspace({ configured }: { configured:boolean }) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Call history could not be loaded.");
     if (signal?.aborted) return [];
-    setItems((previous) => cursor ? [...previous,...data.items.filter((item:CallReview) => !previous.some((old) => old.callSid === item.callSid))] : data.items);
+    setItems((previous) => cursor ? [...previous,...data.items.filter((item:CallReview) => !previous.some((old) => old.callSid === item.callSid))]
+      : initialCall && !data.items.some((item:CallReview)=>item.callSid===initialCall.callSid) ? [initialCall,...data.items] : data.items);
     setNextCursor(data.nextCursor);
     setSelected((previous) => previous ?? data.items[0]?.callSid ?? null);
     return data.items as CallReview[];
-  },[]);
+  },[initialCall]);
   useEffect(() => {
     if (!configured) return;
     const controller = new AbortController();

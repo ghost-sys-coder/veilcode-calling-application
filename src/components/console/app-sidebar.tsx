@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, CalendarClock, History, Phone, ShieldCheck, Users } from "lucide-react";
+import { ArrowUpRight, CalendarClock, History, LayoutDashboard, Phone, ShieldCheck, Users } from "lucide-react";
 import { BrandMark } from "@/components/landing/brand-mark";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const destinations = [
+  { href: "/console/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/console", label: "Dialer", icon: Phone },
   { href: "/console/history", label: "Call history", icon: History },
   { href: "/console/contacts", label: "Contacts", icon: Users },

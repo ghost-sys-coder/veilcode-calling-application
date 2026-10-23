@@ -13,7 +13,7 @@ export function ConsoleShell({ children, defaultOpen = true }: { children:React.
     <SidebarInset className="workspace-main">
       <header className="workspace-header">
         <div className="workspace-header-title"><SidebarTrigger /><Separator orientation="vertical" className="h-4"/>
-          <span>{pathname === "/console/history" ? "Call history" : pathname === "/console/contacts" ? "Contacts" : pathname === "/console/followups" ? "Follow-ups" : "Dialer"}</span>
+          <span>{pathname === "/console/dashboard" ? "Dashboard" : pathname === "/console/history" ? "Call history" : pathname === "/console/contacts" ? "Contacts" : pathname === "/console/followups" ? "Follow-ups" : "Dialer"}</span>
         </div>
         <div className="workspace-account"><span>YOUR WORKSPACE</span><UserButton /></div>
       </header>
