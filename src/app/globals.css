@@ -78,6 +78,9 @@
   --font-sans: "DM Sans", "Segoe UI", sans-serif;
 }
 
+@layer base {
+  * { border-color: var(--border); }
+}
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--canvas); color: var(--ink); font-family: "DM Sans", "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
@@ -633,6 +636,39 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .console-blocked-main > button { margin-top: 20px; }
 
 /* shadcn workspace navigation */
+.contacts-page { padding-block:48px 40px; }
+.contacts-page h1 { font-size:clamp(36px,4.3vw,60px); }
+.contacts-search { display:flex; align-items:center; gap:10px; }
+.contacts-search > div { display:flex; align-items:center; gap:10px; flex:1; max-width:600px; position:relative; }
+.contacts-search > div > svg { position:absolute; left:13px; color:var(--ink-muted); }
+.contacts-search input { padding-left:40px; background:var(--paper); height:42px; }
+.contacts-search > button { min-height:42px; }
+.contacts-directory { border:1px solid var(--border); background:var(--paper); border-radius:8px; overflow:hidden; }
+.contacts-directory [data-slot="table-head"] { font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-muted); padding:16px; background:#f0f2eb; }
+.contacts-directory [data-slot="table-cell"] { padding:20px 16px; }
+.contact-person,.contact-number { display:flex; flex-direction:column; gap:7px; }
+.contact-person strong { color:var(--ink); font-size:14px; font-weight:650; overflow-wrap:anywhere; }
+.contact-person > span,.contact-number small { color:var(--ink-muted); font-size:11px; }
+.contact-number > span { font-size:12px; font-variant-numeric:tabular-nums; }
+.contact-notes { max-width:240px; min-width:120px; }
+.contact-notes p { overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; font-size:12px; color:var(--ink-muted); line-height:1.6; margin:0; }
+.contact-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
+.contact-actions [data-slot="button"] { flex-shrink:0; }
+.contacts-more { display:flex; justify-content:center; border-top:1px solid var(--border); padding:18px; }
+.contacts-feedback { min-height:20px; font-size:12px; color:var(--ink-muted); margin-block:16px; }
+.contacts-page .review-message { display:flex; align-items:center; justify-content:space-between; gap:15px; }
+.contact-form-fields { border:0; padding:0; margin:24px 0; display:grid; grid-template-columns:1fr 1fr; gap:20px 16px; min-width:0; }
+.contact-form-field { display:flex; flex-direction:column; gap:9px; min-width:0; }
+.contact-form-field:last-child { grid-column:1/-1; }
+.contact-form-field [data-slot="native-select-wrapper"] { width:100%; }
+.contact-form-field p { margin:0; color:var(--ink-muted); font-size:10px; line-height:1.55; }
+.contact-optional { margin-left:auto; font-size:10px; color:var(--ink-muted); font-weight:400; }
+.contact-form-error { color:var(--destructive); background:#fff1e9; padding:12px; border-radius:6px; font-size:12px; line-height:1.6; }
+.contact-dialog { max-height:calc(100svh - 40px); overflow-y:auto; }
+.dialer-contact-name { font-size:12px; line-height:1.7; margin:-5px 0 22px; color:var(--ink-muted); }
+.dialer-contact-name strong { color:var(--ink-soft); }
+@media (max-width:1000px) { .contacts-notes-heading,.contact-notes { display:none; } }
+@media (max-width:767px) { .contacts-page { padding-top:30px; } .contact-form-fields { grid-template-columns:1fr; gap:16px; } .contacts-directory [data-slot="table-cell"],.contacts-directory [data-slot="table-head"] { padding:14px; } }
 .workspace-sidebar-brand { padding:24px 18px 30px; }
 .workspace-sidebar .brand-symbol { width:34px; height:34px; }
 .workspace-sidebar .brand-symbol svg { width:27px; height:27px; }

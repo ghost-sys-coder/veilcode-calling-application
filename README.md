@@ -10,6 +10,8 @@ Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, Clerk, Twili
 
 The console uses a responsive shadcn sidebar and shared form/dialog components. See the [UI component and theme guide](docs/ui-components.md) before changing theme tokens or adding controls.
 
+The private [Contacts directory](docs/contacts.md) adds searchable names, numbers, companies, and notes, with safe dialer prefill. It uses the existing database and needs no new environment variables.
+
 ```text
 src/
   app/

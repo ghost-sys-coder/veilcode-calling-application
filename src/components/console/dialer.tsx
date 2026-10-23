@@ -12,6 +12,7 @@ import { RecordingControls } from "@/components/console/recording-controls";
 import type { CallerIdOption } from "@/lib/caller-id-types";
 import { callingCountries, normalizeDialingNumber, type DialingCountry } from "@/lib/calling-countries";
 import type { VoiceOutcome } from "@/lib/voice-outcome";
+import type { Contact } from "@/lib/contact-types";
 
 type CallState = "idle" | "preparing" | "dialing" | "connected" | "ended" | "error";
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "0", "⌫"] as const;
@@ -25,15 +26,16 @@ const stateLabel: Record<CallState, string> = {
 interface TokenResponse { token?: string; error?: string }
 interface AuthorizationResponse { ticket?: string; error?: string }
 
-export function Dialer({ configured, setupIssues, callerIds, recordingEnabled }: {
+export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, initialContact }: {
   configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[]; recordingEnabled:boolean;
+  initialContact?:Pick<Contact,"id"|"name"|"phone"|"country">;
 }) {
   const [callerId, setCallerId] = useState(callerIds[0]?.number ?? "");
   const selectedCaller = callerIds.find((item) => item.number === callerId) ?? callerIds[0];
   const fromNumber = selectedCaller?.number ?? "";
-  const [country, setCountry] = useState<DialingCountry>("US");
+  const [country, setCountry] = useState<DialingCountry>(initialContact?.country ?? "US");
   const selectedCountry = callingCountries.find((item) => item.code === country)!;
-  const [phone, setPhone] = useState<string>(callingCountries[0].prefix);
+  const [phone, setPhone] = useState<string>(initialContact?.phone ?? callingCountries[0].prefix);
   const [callSid, setCallSid] = useState<string | null>(null);
   const [state, setState] = useState<CallState>("idle");
   const [message, setMessage] = useState("Enter the recipient's phone number to begin.");
@@ -290,6 +292,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled }:
       </div>
       <CallerIdSelector callerIds={callerIds} value={fromNumber} disabled={!configured || isBusy} onChange={changeCallerId} />
       <CountrySelector country={country} disabled={!configured || isBusy} onChange={changeCountry} />
+      {initialContact && phone === initialContact.phone && country === initialContact.country && <p className="dialer-contact-name">Ready to call <strong>{initialContact.name}</strong>. Press Place call when you’re ready.</p>}
       <div className="terminal-number-caption">RECIPIENT PHONE NUMBER <span>{selectedCountry.prefix}</span></div>
       <Label className="terminal-number-field"><Phone size={23} strokeWidth={1.6}/><Input
         type="tel" inputMode="tel" autoComplete="tel" aria-label="Recipient phone number"
