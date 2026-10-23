@@ -13,7 +13,7 @@ export function Hero() {
           <h1 id="hero-title">Be heard.<br /> <span>From anywhere.</span></h1>
           <p className="hero-lede">Your business conversations deserve a better starting point. Call US prospects from your browser, using one familiar US business number.</p>
           <div className="hero-cta-row">
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="vc-button vc-button-primary vc-button-lg">
               <Link href="/console">Enter the console <ArrowUpRight size={19} /></Link>
             </Button>
             <Link className="hero-text-link" href="#how-it-works">See how it works <ChevronRight size={18} /></Link>

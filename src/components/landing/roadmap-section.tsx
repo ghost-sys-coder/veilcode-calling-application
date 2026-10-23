@@ -16,7 +16,7 @@ export function RoadmapSection() {
           <div className="section-tag"><span className="orange-square" /> AN INTENTIONAL BUILD <span className="section-index">03 / 03</span></div>
           <h2 id="roadmap-heading">The important part<br />comes <em>next.</em></h2>
           <p>We&apos;re building VeilCall in the right order. A clear product first, working calls immediately after, and supporting tools when there&apos;s a reason to add them.</p>
-          <Button asChild size="lg"><Link href="/console">View call console <ArrowUpRight size={19} /></Link></Button>
+          <Button asChild size="lg" className="vc-button vc-button-primary vc-button-lg"><Link href="/console">View call console <ArrowUpRight size={19} /></Link></Button>
           <span className="roadmap-aside">CURRENT RELEASE · INTERFACE FOUNDATION</span>
         </div>
         <div className="roadmap-panel" role="list" aria-label="Product development phases">

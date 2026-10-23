@@ -2,8 +2,8 @@ import { ArrowUpRight, Headphones, LockKeyhole, Signal, Shield, Zap } from "luci
 import { Dialer } from "@/components/console/dialer";
 import type { CallerIdOption } from "@/lib/caller-id-types";
 
-export function CallWorkspace({ configured, setupIssues, callerIds }: {
-  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[];
+export function CallWorkspace({ configured, setupIssues, callerIds, recordingEnabled = false }: {
+  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[]; recordingEnabled?:boolean;
 }) {
   return <div className="dialer-page">
     <div className="shell dialer-title-row">
@@ -23,7 +23,7 @@ export function CallWorkspace({ configured, setupIssues, callerIds }: {
         <div className="dialer-aside-fact"><Zap size={18}/><span><strong>US, Canada, UK &amp; Australia</strong>Validated before calling</span></div>
         <span className="dialer-aside-foot">BUILT BY VEILCODE STUDIO <ArrowUpRight size={15}/></span>
       </aside>
-      <Dialer configured={configured} setupIssues={setupIssues} callerIds={callerIds} />
+      <Dialer configured={configured} setupIssues={setupIssues} callerIds={callerIds} recordingEnabled={recordingEnabled} />
     </div>
     <div className="shell dialer-footnote">Use the service only for lawful outreach. Recipient consent, telemarketing rules, and Twilio charges remain your responsibility.</div>
   </div>;

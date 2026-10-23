@@ -1,0 +1,23 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
+import { AppSidebar } from "@/components/console/app-sidebar";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+
+export function ConsoleShell({ children, defaultOpen = true }: { children:React.ReactNode; defaultOpen?:boolean }) {
+  const pathname = usePathname();
+  return <SidebarProvider defaultOpen={defaultOpen} className="workspace-shell" style={{ "--sidebar-width":"15rem" } as React.CSSProperties}>
+    <AppSidebar />
+    <SidebarInset className="workspace-main">
+      <header className="workspace-header">
+        <div className="workspace-header-title"><SidebarTrigger /><Separator orientation="vertical" className="h-4"/>
+          <span>{pathname === "/console/history" ? "Call history" : "Dialer"}</span>
+        </div>
+        <div className="workspace-account"><span>YOUR WORKSPACE</span><UserButton /></div>
+      </header>
+      {children}
+    </SidebarInset>
+  </SidebarProvider>;
+}

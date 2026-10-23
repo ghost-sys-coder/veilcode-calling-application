@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LockKeyhole, ArrowLeft } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/landing/brand-mark";
 
 export function Unauthorized({ userId }: { userId: string }) {
@@ -13,7 +14,7 @@ export function Unauthorized({ userId }: { userId: string }) {
       <p>Your Clerk account is valid. Calling privileges are intentionally disabled until your user ID is added to the server allowlist.</p>
       <div className="console-id">CLERK USER ID <code>{userId}</code></div>
       <p>Add this exact ID to <code>CLERK_ALLOWED_USER_IDS</code> in <code>.env.local</code>, restart the app, and return to the console.</p>
-      <SignOutButton><button type="button" className="vc-button vc-button-primary vc-button-md">Sign out</button></SignOutButton>
+      <SignOutButton><Button type="button" className="vc-button vc-button-primary vc-button-md">Sign out</Button></SignOutButton>
     </main>
   </div>;
 }

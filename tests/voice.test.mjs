@@ -1,23 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import test from "node:test";
-import ts from "typescript";
+import { loadModule } from "./support/load-typescript.mjs";
 import { createHmac } from "node:crypto";
 
 const require = createRequire(import.meta.url);
-
-// Load the actual TypeScript modules with explicit mocks for external services.
-function loadModule(path, imports = {}) {
-  const source = readFileSync(new URL(path, import.meta.url), "utf8");
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
-  });
-  const loadedModule = { exports: {} };
-  const load = (name) => Object.hasOwn(imports, name) ? imports[name] : require(name);
-  new Function("require", "module", "exports", outputText)(load, loadedModule, loadedModule.exports);
-  return loadedModule.exports;
-}
 
 const countries = loadModule("../src/lib/calling-countries.ts");
 const { normalizeDialingNumber } = countries;
@@ -331,6 +318,7 @@ function webhookRoute(config = voiceConfig) {
     "@/lib/caller-ids": callerIdsModule,
     "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
     "@/lib/voice-config": { getVoiceConfig: () => config },
+    "@/lib/review-call-tracking": { trackCall:async () => false },
   });
   return (ticket, overrides = {}, validSignature = true) => {
     const params = { AccountSid: config.accountSid, From: "client:user_operator", Ticket: ticket, ...overrides };

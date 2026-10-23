@@ -10,5 +10,6 @@ coverage
 .DS_Store
 .vercel
 *.tsbuildinfo
+/artifacts/
 
 .vercel

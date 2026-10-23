@@ -4,7 +4,11 @@ Private browser dialer for US, Canadian, UK, and Australian outbound calls with 
 
 ## Stack and structure
 
-Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, Clerk, Twilio Voice JavaScript SDK, shadcn-inspired Button, Lucide. Server components by default. Each first-party React component lives in a separate file. No database is needed for this initial calling workflow.
+Call history, consent-based recording controls, private playback/downloads, ratings, notes, bookmarks, and audio retention are implemented. See [call review setup and operation](docs/call-reviews.md) for database variables, migrations, deployment, and the first consented recording test.
+
+Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, Clerk, Twilio Voice JavaScript SDK, shadcn/ui, Lucide, and Postgres for call reviews. Server components by default. Each first-party React component lives in a separate file. Ordinary calling remains available without review storage.
+
+The console uses a responsive shadcn sidebar and shared form/dialog components. See the [UI component and theme guide](docs/ui-components.md) before changing theme tokens or adding controls.
 
 ```text
 src/
@@ -21,7 +25,8 @@ src/
   components/
     auth/auth-shell.tsx
     console/call-workspace.tsx
-    console/console-header.tsx
+    console/console-shell.tsx             shared console header and sidebar provider
+    console/app-sidebar.tsx               shadcn workspace navigation
     console/caller-id-selector.tsx        approved outgoing caller numbers
     console/dialer.tsx
     console/unauthorized.tsx
@@ -118,7 +123,7 @@ Supported countries in this application still require permission from Twilio. En
 - The Voice callback validates the Twilio request signature, the Twilio Account SID, the client identity, the signed operator/destination/caller-ID permit, and the destination and caller ID again. Arbitrary `To` or caller ID values from the browser are never trusted.
 - The origin check on the destination authorization API blocks ordinary cross-origin form submissions, but does not replace Clerk session verification.
 - This is a private **single-operator pilot**, not a hardened multi-tenant contact center. HMAC permits are short-lived but do not have persisted one-time redemption state. There is no durable per-user quota, rate limiting, contact permission enforcement, or real-time billing limit. Keep Twilio's geo permissions restricted and use account usage triggers and a low spend threshold; add durable quotas via Redis/database before scaling to multiple operators or exposing it beyond a private pilot.
-- Sales calls can be restricted by US telemarketing, Do Not Call, time-of-day, consent and caller identification rules, depending on the destination and outreach method. Do not assume a displayed US number exempts you from these rules. Call recording is intentionally omitted.
+- Sales calls can be restricted by telemarketing, Do Not Call, time-of-day, consent and caller identification rules, depending on the destination and outreach method. Do not assume a displayed business number exempts you from these rules. Call recording requires an explicit operator consent attestation; see the recording setup guide before enabling it operationally.
 - If credential values are missing, the console shows the missing **variable names only**, never secret values. `TWILIO_CALLING_ENABLED=false` is the default.
 
 ## Checks

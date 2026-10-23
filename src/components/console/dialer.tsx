@@ -1,10 +1,14 @@
 "use client";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import { useEffect, useRef, useState } from "react";
 import type { Call, Device as TwilioDevice } from "@twilio/voice-sdk";
 import { Mic, MicOff, Phone, PhoneOff, Volume2 } from "lucide-react";
 import { CountrySelector } from "@/components/console/country-selector";
 import { CallerIdSelector } from "@/components/console/caller-id-selector";
+import { RecordingControls } from "@/components/console/recording-controls";
 import type { CallerIdOption } from "@/lib/caller-id-types";
 import { callingCountries, normalizeDialingNumber, type DialingCountry } from "@/lib/calling-countries";
 import type { VoiceOutcome } from "@/lib/voice-outcome";
@@ -21,8 +25,8 @@ const stateLabel: Record<CallState, string> = {
 interface TokenResponse { token?: string; error?: string }
 interface AuthorizationResponse { ticket?: string; error?: string }
 
-export function Dialer({ configured, setupIssues, callerIds }: {
-  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[];
+export function Dialer({ configured, setupIssues, callerIds, recordingEnabled }: {
+  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[]; recordingEnabled:boolean;
 }) {
   const [callerId, setCallerId] = useState(callerIds[0]?.number ?? "");
   const selectedCaller = callerIds.find((item) => item.number === callerId) ?? callerIds[0];
@@ -287,24 +291,25 @@ export function Dialer({ configured, setupIssues, callerIds }: {
       <CallerIdSelector callerIds={callerIds} value={fromNumber} disabled={!configured || isBusy} onChange={changeCallerId} />
       <CountrySelector country={country} disabled={!configured || isBusy} onChange={changeCountry} />
       <div className="terminal-number-caption">RECIPIENT PHONE NUMBER <span>{selectedCountry.prefix}</span></div>
-      <label className="terminal-number-field"><Phone size={23} strokeWidth={1.6}/><input
+      <Label className="terminal-number-field"><Phone size={23} strokeWidth={1.6}/><Input
         type="tel" inputMode="tel" autoComplete="tel" aria-label="Recipient phone number"
         placeholder={selectedCountry.example} value={phone} disabled={!configured || isBusy}
         onChange={(event) => setPhone(event.target.value)} maxLength={30} />
-        <span>{country === "GB" ? "UK" : country}</span></label>
+        <span>{country === "GB" ? "UK" : country}</span></Label>
       <div className="terminal-keypad" aria-label="Phone keypad">
-        {digits.map((digit) => <button type="button" key={digit} disabled={!configured || isBusy}
-          onClick={() => changeDigit(digit)} aria-label={digit === "⌫" ? "Delete last digit" : `Enter ${digit}`}>{digit}</button>)}
+        {digits.map((digit) => <Button variant="ghost" type="button" key={digit} disabled={!configured || isBusy}
+          onClick={() => changeDigit(digit)} aria-label={digit === "⌫" ? "Delete last digit" : `Enter ${digit}`}>{digit}</Button>)}
       </div>
       <div className="terminal-actions">
-        {isBusy ? <button type="button" className="terminal-end" onClick={hangUp}><PhoneOff size={19}/> End call</button>
-          : <button type="button" className="terminal-call" onClick={() => void dial()} disabled={!configured}>
+        {isBusy ? <Button variant="ghost" type="button" className="terminal-end" onClick={hangUp}><PhoneOff size={19}/> End call</Button>
+          : <Button variant="ghost" type="button" className="terminal-call" onClick={() => void dial()} disabled={!configured}>
               <Phone size={19}/> Place call <span>→</span>
-            </button>}
-        {state === "connected" && <button type="button" className="terminal-mute" onClick={toggleMute} aria-label={muted ? "Unmute microphone" : "Mute microphone"}>{muted ? <MicOff size={19}/> : <Mic size={19}/>} {muted ? "Unmute" : "Mute"}</button>}
+            </Button>}
+        {state === "connected" && <Button variant="ghost" type="button" className="terminal-mute" onClick={toggleMute} aria-label={muted ? "Unmute microphone" : "Mute microphone"}>{muted ? <MicOff size={19}/> : <Mic size={19}/>} {muted ? "Unmute" : "Mute"}</Button>}
       </div>
       <div className="terminal-feedback" role="status" aria-live="polite"><span><Volume2 size={16}/>{configured ? message : "Calling stays disabled until setup is complete."}</span><strong>{minutes}:{seconds}</strong></div>
       {callSid && <div className="terminal-call-reference">CALL REFERENCE <code>{callSid}</code></div>}
+      {state === "connected" && callSid && <RecordingControls key={callSid} callSid={callSid} enabled={recordingEnabled}/>}
       {!configured && <div className="terminal-setup-note"><strong>Setup checklist</strong>
         <p>{setupIssues.length ? `Missing: ${setupIssues.join(", ")}` : "Enable TWILIO_CALLING_ENABLED=true after completing setup."}</p>
       </div>}

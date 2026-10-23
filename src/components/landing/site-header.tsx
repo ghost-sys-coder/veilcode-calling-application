@@ -18,7 +18,7 @@ export function SiteHeader() {
         <div className="header-actions">
           <span className="header-status"><span className="tiny-signal" /> PRIVATE BETA</span>
           <SignedOut><Link href="/sign-in" className="header-signin">Sign in</Link></SignedOut>
-          <Button asChild size="sm" variant="default" className="header-console">
+          <Button asChild size="sm" variant="default" className="header-console vc-button vc-button-primary vc-button-sm">
             <Link href="/console" prefetch={false}>Open console <ArrowUpRight size={16} /></Link>
           </Button>
           <SignedIn><UserButton /></SignedIn>

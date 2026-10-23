@@ -3,6 +3,7 @@ import { verifyCallTicket } from "@/lib/call-ticket";
 import { isApprovedCallerId } from "@/lib/caller-ids";
 import { validateCallingDestination } from "@/lib/destination";
 import { getVoiceConfig } from "@/lib/voice-config";
+import { trackCall } from "@/lib/review-call-tracking";
 
 export const runtime = "nodejs";
 
@@ -37,8 +38,11 @@ export async function POST(request: Request) {
     return new Response("Call permission expired or invalid", { status: 403 });
   }
   const response = new twilio.twiml.VoiceResponse();
+  const tracked = await trackCall(params.CallSid ?? "",ticket.sub,ticket.to,ticket.from);
   const dial = response.dial({ callerId: ticket.from, answerOnBridge: true, timeout: 30 });
-  dial.number(ticket.to);
+  if (tracked) dial.number({ statusCallback:new URL("/api/voice/calls/callback",config.webhookUrl).toString(),
+    statusCallbackMethod:"POST",statusCallbackEvent:["initiated","ringing","answered","completed"] },ticket.to);
+  else dial.number(ticket.to);
   return new Response(response.toString(), {
     status: 200,
     headers: { "Content-Type": "text/xml; charset=utf-8", "Cache-Control": "no-store" },
