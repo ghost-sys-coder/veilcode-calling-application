@@ -3,6 +3,22 @@
 @import "tw-animate-css";
 @import "@clerk/ui/themes/shadcn.css";
 
+.followup-editor { margin: 1.5rem 0; padding: 1.25rem 0; border-block: 1px solid var(--border); }
+.followup-fields { display: grid; gap: 1rem; min-width: 0; }
+.followup-fields > div { display: grid; gap: .45rem; min-width: 0; }
+.followup-fields [data-slot="native-select-wrapper"] { width: 100%; }
+.followup-fields > button { justify-self: start; }
+.followup-hint { font-size: .76rem; color: var(--muted-foreground); line-height: 1.5; }
+.followup-editor .review-section-title { margin-top: 0; flex-wrap: wrap; gap: .5rem; }
+.followup-editor .review-section-title a { color: var(--primary); font-size: .78rem; text-decoration: underline; text-underline-offset: 3px; }
+.followups-toolbar { display: flex; align-items: end; gap: 1rem; justify-content: space-between; }
+.followups-toolbar > div { display: grid; gap: .5rem; }
+.followup-overdue { color: #a6402d !important; font-weight: 600; }
+.followup-dialog { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.followup-dialog .followup-editor { border: 0; padding: 0; margin: 0; }
+.followup-dialog > button:last-child { justify-self: start; }
+@media (max-width: 640px) { .followups-page .history-title h1 { font-size: 2.4rem; } .followups-toolbar { align-items: stretch; } .followup-fields input { min-width: 0; } }
+
 :root {
   --background: #f6f5f1;
   --foreground: #17211e;

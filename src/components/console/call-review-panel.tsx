@@ -7,6 +7,7 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bookmark, RefreshCw, Save, X } from "lucide-react";
 import { RecordingPlayer } from "@/components/console/recording-player";
+import { FollowUpEditor } from "@/components/console/followup-editor";
 import type { CallReview, ReviewBookmark } from "@/lib/review-types";
 
 export function CallReviewPanel({ call, onDirtyChange, onUpdated }: {
@@ -19,6 +20,8 @@ export function CallReviewPanel({ call, onDirtyChange, onUpdated }: {
   const [loading,setLoading] = useState(true);
   const [saving,setSaving] = useState(false);
   const [dirty,setDirty] = useState(false);
+  const [followUpDirty,setFollowUpDirty] = useState(false);
+  useEffect(()=>{onDirtyChange(dirty || followUpDirty);},[dirty,followUpDirty,onDirtyChange]);
   const [message,setMessage] = useState("");
   const mounted = useRef(true);
   const refresh = useCallback(async (signal?:AbortSignal) => {
@@ -34,12 +37,13 @@ export function CallReviewPanel({ call, onDirtyChange, onUpdated }: {
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { mounted.current = false; controller.abort(); };
   },[refresh]);
-  function changed() { setDirty(true); onDirtyChange(true); setMessage(""); }
+  function changed() { setDirty(true); setMessage(""); }
   return <section className="review-panel" aria-label="Selected call review">
     <div className="review-panel-heading"><div><span className="terminal-overline">CONVERSATION / REVIEW</span><h2>{call.to || "Unknown recipient"}</h2></div><Button variant="ghost" type="button" className="review-icon-button" disabled={loading} aria-label="Refresh recording availability" onClick={() => {
       setLoading(true); refresh().catch((issue) => setMessage(issue.message)).finally(() => { if (mounted.current) setLoading(false); });
     }}><RefreshCw size={17}/></Button></div>
-    <dl className="review-call-facts"><div><dt>CALLED FROM</dt><dd>{call.from || "Not available"}</dd></div><div><dt>TELEPHONE DURATION</dt><dd>{Math.floor(call.duration/60)}m {call.duration%60}s</dd></div><div><dt>OUTCOME</dt><dd>{call.status.replaceAll("-"," ")}</dd></div></dl>
+    <dl className="review-call-facts"><div><dt>CALLED FROM</dt><dd>{call.from || "Not available"}</dd></div><div><dt>TELEPHONE DURATION</dt><dd>{Math.floor(call.duration/60)}m {call.duration%60}s</dd></div><div><dt>CALL STATUS</dt><dd>{call.status.replaceAll("-"," ")}</dd></div></dl>
+    <FollowUpEditor callSid={call.callSid} onDirtyChange={setFollowUpDirty}/>
     <div className="review-section-title"><h3>Recordings</h3><span>{loading ? "Checking availability…" : `${review.recordings.length} recording${review.recordings.length === 1 ? "" : "s"}`}</span></div>
     {review.recordings.length === 0 && <div className="review-no-audio"><p>No recording is available for this call.</p><span>Unrecorded calls cannot be recovered. For future calls, confirm consent and use Start recording in the dialer.</span></div>}
     {review.recordings.map((recording) => <RecordingPlayer key={recording.sid} recording={recording}
@@ -72,7 +76,7 @@ export function CallReviewPanel({ call, onDirtyChange, onUpdated }: {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Review was not saved.");
         if (!mounted.current) return;
-        setDirty(false); onDirtyChange(false); onUpdated({...review,notes,rating,bookmarks}); setMessage("Review saved.");
+        setDirty(false); onUpdated({...review,notes,rating,bookmarks}); setMessage("Review saved.");
       } catch (issue) { if (mounted.current) setMessage(issue instanceof Error ? issue.message : "Your review could not be saved."); }
       finally { if (mounted.current) setSaving(false); }
     }}><Save size={16}/>{saving ? "Saving…" : "Save review"}</Button><span>{notes.length.toLocaleString()} / 10,000</span></div>

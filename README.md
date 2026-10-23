@@ -12,6 +12,8 @@ The console uses a responsive shadcn sidebar and shared form/dialog components. 
 
 The private [Contacts directory](docs/contacts.md) adds searchable names, numbers, companies, and notes, with safe dialer prefill. It uses the existing database and needs no new environment variables.
 
+[Call outcomes and follow-ups](docs/followups.md) add business outcomes, callback dates and notes, an overdue/upcoming/completed queue, and callback dialer prefill. They use the same database with migration `003_call_followups.sql`.
+
 ```text
 src/
   app/

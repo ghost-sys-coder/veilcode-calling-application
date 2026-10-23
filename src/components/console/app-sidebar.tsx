@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, History, Phone, ShieldCheck, Users } from "lucide-react";
+import { ArrowUpRight, CalendarClock, History, Phone, ShieldCheck, Users } from "lucide-react";
 import { BrandMark } from "@/components/landing/brand-mark";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
@@ -13,6 +13,7 @@ const destinations = [
   { href: "/console", label: "Dialer", icon: Phone },
   { href: "/console/history", label: "Call history", icon: History },
   { href: "/console/contacts", label: "Contacts", icon: Users },
+  { href: "/console/followups", label: "Follow-ups", icon: CalendarClock },
 ];
 
 export function AppSidebar() {

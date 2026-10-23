@@ -1,0 +1,43 @@
+import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import pg from "pg";
+import { loadModule } from "../tests/support/load-typescript.mjs";
+createRequire(import.meta.url)("@next/env").loadEnvConfig(process.cwd());
+const url=new URL(process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL);
+if (process.env.FOLLOWUP_TEST_HOST) url.hostname=process.env.FOLLOWUP_TEST_HOST;
+const client=new pg.Client({connectionString:url.toString(),connectionTimeoutMillis:20000});
+const store=loadModule("../src/lib/followup-store.ts",{"server-only":{},"@/lib/review-db":{reviewDatabase:()=>client}});
+const sid=()=>`CA${randomBytes(16).toString("hex")}`;
+const callSid=sid(),otherCall=sid(),user=`test_followup_${randomBytes(8).toString("hex")}`;
+const input={outcome:"callback_needed",callbackAt:"2026-10-22T09:30:00.123Z",note:"Proposal callback",completed:false};
+try {
+  await client.connect();await client.query("BEGIN");
+  await client.query(await readFile(new URL("../migrations/003_call_followups.sql",import.meta.url),"utf8"));
+  await client.query("INSERT INTO veilcall_calls(call_sid,operator_id,to_number,country,notes,rating,status) VALUES($1,$3,'+442079460123','GB','Quality notes',5,'completed'),($2,$4,'+442079460123','GB','',NULL,'failed')",[callSid,otherCall,user,`${user}_other`]);
+  assert.equal((await store.getFollowUp(callSid,user)).outcome,"not_set");
+  assert.equal(await store.getFollowUp(callSid,`${user}_other`),null);
+  assert.equal(await store.saveFollowUp(otherCall,user,input),false);
+  assert.equal(await store.saveFollowUp(callSid,user,input),true);
+  assert.equal((await store.getFollowUp(callSid,user)).callbackAt,input.callbackAt);
+  assert.equal((await store.listFollowUps(user,"overdue")).items.length,1);
+  assert.equal((await store.listFollowUps(`${user}_other`,"open")).items.length,0);
+  await store.saveFollowUp(callSid,user,{...input,completed:true});
+  assert.equal((await store.listFollowUps(user,"open")).items.length,0);
+  assert.equal((await store.listFollowUps(user,"completed")).items.length,1);
+  await store.saveFollowUp(callSid,user,{...input,callbackAt:"2099-11-01T00:00:00.000Z"});
+  assert.equal((await store.listFollowUps(user,"upcoming")).items.length,1);
+  await store.saveFollowUp(callSid,user,{outcome:"interested",callbackAt:null,note:"Success",completed:false});
+  assert.equal((await store.listFollowUps(user,"open")).items.length,0);
+  const quality=await client.query("SELECT notes,rating,status FROM veilcall_calls WHERE call_sid=$1",[callSid]);
+  assert.deepEqual(quality.rows[0],{notes:"Quality notes",rating:5,status:"completed"});
+  const ids=Array.from({length:53},sid);
+  await client.query("INSERT INTO veilcall_calls(call_sid,operator_id) SELECT value,$1 FROM jsonb_array_elements_text($2::jsonb)",[user,JSON.stringify(ids)]);
+  await client.query("INSERT INTO veilcall_call_followups(call_sid,outcome,callback_at) SELECT value,'callback_needed',$2 FROM jsonb_array_elements_text($1::jsonb)",[JSON.stringify(ids),input.callbackAt]);
+  const first=await store.listFollowUps(user,"open");assert.equal(first.items.length,50);
+  const second=await store.listFollowUps(user,"open",JSON.parse(Buffer.from(first.nextCursor,"base64url")));assert.equal(second.items.length,3);
+  assert.ok(!second.items.some((item)=>first.items.some((old)=>old.callSid===item.callSid)));
+  console.log("Follow-up storage passed: migration, ownership, queue filters, completion, reopening, outcomes, quality preservation and pagination. Test writes roll back.");
+} catch(error) {console.error(`Follow-up storage check failed (${error.code || error.name}). No credentials logged.`);process.exitCode=1;}
+finally {await client.query("ROLLBACK").catch(()=>{});await client.end();}
