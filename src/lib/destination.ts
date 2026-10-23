@@ -34,6 +34,11 @@ export function validateCallingDestination(
     if (/^(?:70|76|84|87|9)/.test(national)) return null;
   }
 
+  if (phone.country === "AU" && national.startsWith("19")) {
+    // Australian 19-prefixed premium services are excluded from outbound dialing.
+    return null;
+  }
+
   const allowlist = (process.env.TWILIO_ALLOWED_DESTINATIONS ?? "")
     .split(",")
     .map((item) => item.trim())

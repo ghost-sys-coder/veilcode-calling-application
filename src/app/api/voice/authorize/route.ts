@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   let body: unknown;
   try { body = await request.json(); } catch { return voiceJson({ error: "Invalid request." }, 400); }
   const destination = validateCallingDestination((body as { to?: unknown } | null)?.to);
-  if (!destination) return voiceJson({ error: "Enter a valid US, Canadian, or UK number in international format." }, 400);
+  if (!destination) return voiceJson({ error: "Enter a valid US, Canadian, UK, or Australian number in international format." }, 400);
   try {
     const config = getVoiceConfig();
     const requestedCallerId = (body as { from?: unknown } | null)?.from;

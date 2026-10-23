@@ -32,7 +32,7 @@ export function Dialer({ configured, setupIssues, callerIds }: {
   const [phone, setPhone] = useState<string>(callingCountries[0].prefix);
   const [callSid, setCallSid] = useState<string | null>(null);
   const [state, setState] = useState<CallState>("idle");
-  const [message, setMessage] = useState("Enter a United States number to begin.");
+  const [message, setMessage] = useState("Enter the recipient's phone number to begin.");
   const [muted, setMuted] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const callRef = useRef<Call | null>(null);
@@ -80,7 +80,7 @@ export function Dialer({ configured, setupIssues, callerIds }: {
     setState("idle");
     setElapsed(0);
     setCallSid(null);
-    setMessage(`Enter a ${next.name} number to begin.`);
+    setMessage(`${next.name} selected. Enter a phone number to begin.`);
   }
 
   function changeCallerId(number: string) {
@@ -150,7 +150,7 @@ export function Dialer({ configured, setupIssues, callerIds }: {
     if (!destination) {
       operationRef.current += 1;
       setState("error");
-      setMessage(`Enter a valid ${selectedCountry.name} number, for example ${selectedCountry.example}.`);
+      setMessage(`Enter a valid number for ${selectedCountry.name}, for example ${selectedCountry.example}.`);
       return;
     }
     busyRef.current = true;

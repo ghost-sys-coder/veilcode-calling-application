@@ -34,10 +34,20 @@ test("normalizes UK local trunk prefix and international numbers", () => {
   assert.equal(normalizeDialingNumber("+44 20 7946 0123", "GB"), "+442079460123");
 });
 
+test("normalizes Australian landlines, mobiles and formatted international numbers", () => {
+  assert.equal(normalizeDialingNumber("02 5550 0123", "AU"), "+61255500123");
+  assert.equal(normalizeDialingNumber("0412 345 678", "AU"), "+61412345678");
+  assert.equal(normalizeDialingNumber("+61 (2) 5550-0123", "AU"), "+61255500123");
+  assert.equal(normalizeDialingNumber("+61 412 345 678", "AU"), "+61412345678");
+});
+
 test("rejects countries that do not match the selection, including shared +1 codes", () => {
   assert.equal(normalizeDialingNumber("+442079460123", "US"), null);
   assert.equal(normalizeDialingNumber("+14165550123", "US"), null);
   assert.equal(normalizeDialingNumber("+12125550123", "CA"), null);
+  assert.equal(normalizeDialingNumber("+61412345678", "US"), null);
+  assert.equal(normalizeDialingNumber("+442079460123", "AU"), null);
+  assert.equal(normalizeDialingNumber("+64 21 123 4567", "AU"), null);
 });
 
 test("rejects incomplete, unsupported and extension inputs", () => {
@@ -56,11 +66,19 @@ test("server validation retains premium and recipient allowlist restrictions", (
     assert.equal(validateCallingDestination("+12125550123"), "+12125550123");
     assert.equal(validateCallingDestination("+14165550123"), "+14165550123");
     assert.equal(validateCallingDestination("+442079460123"), "+442079460123");
+    assert.equal(validateCallingDestination("+61255500123"), "+61255500123");
+    assert.equal(validateCallingDestination("+61412345678"), "+61412345678");
     assert.equal(validateCallingDestination("+19005550123"), null);
     assert.equal(validateCallingDestination("+447012345678"), null);
+    assert.equal(validateCallingDestination("+611900123456"), null);
+    assert.equal(validateCallingDestination("+611902123456"), null);
     process.env.TWILIO_ALLOWED_DESTINATIONS = "+442079460123";
     assert.equal(validateCallingDestination("+12125550123"), null);
     assert.equal(validateCallingDestination("+442079460123"), "+442079460123");
+    assert.equal(validateCallingDestination("+61412345678"), null);
+    process.env.TWILIO_ALLOWED_DESTINATIONS = "+61412345678";
+    assert.equal(validateCallingDestination("+61412345678"), "+61412345678");
+    assert.equal(validateCallingDestination("+61255500123"), null);
   } finally {
     if (previous === undefined) delete process.env.TWILIO_ALLOWED_DESTINATIONS;
     else process.env.TWILIO_ALLOWED_DESTINATIONS = previous;

@@ -1,6 +1,6 @@
 # VeilCall
 
-Private browser dialer for US, Canadian, and UK outbound calls with Clerk authentication and Twilio Programmable Voice. The original custom landing page is retained. Authenticated console and calling code are implemented. Live account records confirm a completed UK call; US attempts were rejected by Twilio with error 13225.
+Private browser dialer for US, Canadian, UK, and Australian outbound calls with Clerk authentication and Twilio Programmable Voice. The original custom landing page is retained. Authenticated console and calling code are implemented. Live account records confirm a completed UK call; US attempts were rejected by Twilio with error 13225.
 
 ## Stack and structure
 
@@ -32,7 +32,7 @@ src/
     call-ticket.ts                        HMAC signed operator, destination, and caller ID permit
     caller-ids.ts                         server-approved outgoing caller ID registry
     calling-countries.ts                  shared country options and input normalization
-    destination.ts                        permitted US, Canadian, and UK destinations
+    destination.ts                        permitted US, Canadian, UK, and Australian destinations
     voice-outcome.ts                      safe call outcome and error descriptions
     voice-config.ts                       fail-closed Twilio settings
     voice-responses.ts                    JSON, request origin checks
@@ -62,7 +62,7 @@ Use Node 22 or later. Visit `http://localhost:3000`.
 
 ## 3. Configure Twilio
 
-You need a Twilio account with enough credit, a voice capable Twilio US number that you control, an API Key SID + Secret, your Account SID and Auth Token, and a TwiML App. Confirm your account is upgraded if the trial prevents unverified outbound recipients. Configure Twilio Voice geographic dialing permissions for only the supported destinations you intend to call (US, Canada, UK), and activate a usage budget/alert before making live calls.
+You need a Twilio account with enough credit, a voice capable Twilio US number that you control, an API Key SID + Secret, your Account SID and Auth Token, and a TwiML App. Confirm your account is upgraded if the trial prevents unverified outbound recipients. Configure Twilio Voice geographic dialing permissions for only the supported destinations you intend to call (US, Canada, UK, Australia), and activate a usage budget/alert before making live calls.
 
 1. In Twilio Console, create an **API Key**. Copy `TWILIO_API_KEY_SID` (`SK...`) and `TWILIO_API_KEY_SECRET` into `.env.local`.
 2. Copy `TWILIO_ACCOUNT_SID` (`AC...`) and `TWILIO_AUTH_TOKEN` from Twilio Console into `.env.local`.
@@ -70,7 +70,7 @@ You need a Twilio account with enough credit, a voice capable Twilio US number t
 4. In Twilio Console > Voice > TwiML Apps, create an application. Set **Voice Request URL** to the publicly accessible, HTTPS URL `https://YOUR_DOMAIN/api/voice/twiml`. Set **HTTP Method = POST**. Copy the resulting application SID (`AP...`) to `TWILIO_TWIML_APP_SID`.
 5. Set `TWILIO_WEBHOOK_URL` to that **identical** full HTTPS URL. Twilio signatures rely on the URL matching exactly, including any trailing slash or proxy configuration.
 6. Generate the call permit signing secret in PowerShell: `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Copy into `TWILIO_CALL_SIGNING_SECRET`. This is independent from Twilio credentials.
-7. Before the first test, optionally set `TWILIO_ALLOWED_DESTINATIONS=+1...,+44...` to the supported recipient numbers you own/control for verification.
+7. Before the first test, optionally set `TWILIO_ALLOWED_DESTINATIONS=+1...,+44...,+61...` to the supported recipient numbers you own/control for verification.
 8. Once settings, caller ID, dialing permissions, and spend alerts are verified, set `TWILIO_CALLING_ENABLED=true` and restart/redeploy. This is the emergency shutdown switch, set it to `false` to turn off new calls.
 
 ### Public HTTPS requirement
@@ -96,7 +96,7 @@ For local development, restart the app after changing the environment. For produ
 
 ### First end-to-end test
 
-1. Sign in as an allowlisted Clerk user and visit `/console`. Select the outgoing number under **Call from**, then choose United States (+1), Canada (+1), or United Kingdom (+44) as the destination country. Switching countries clears the previous recipient and sets the new prefix.
+1. Sign in as an allowlisted Clerk user and visit `/console`. Select the outgoing number under **Call from**, then choose United States (+1), Canada (+1), United Kingdom (+44), or Australia (+61) as the destination country. Switching countries clears the previous recipient and sets the new prefix. Australian local landline and mobile numbers (such as `02 5550 0123` or `0412 345 678`) are converted to international format without the leading zero.
 2. Allow microphone access in your browser. Enter a real test number for the selected country. Local numbers and international numbers with spaces, parentheses, or hyphens are normalized before authorization. The number must match the selected country, including US versus Canada.
 3. Click **Place call**, confirm Twilio connects the voice leg, the recipient's phone rings and displays your configured US number, and confirm both parties can hear each other.
 4. Verify mute and hangup. Inspect Twilio Call Logs and actual charges.
@@ -114,7 +114,7 @@ Supported countries in this application still require permission from Twilio. En
 ## Security notes and production limitations
 
 - Twilio Account SID, Auth Token, API secrets and call signing key never enter browser JavaScript. The browser receives a 10-minute scoped Voice Access Token (which is usable only with its configured TwiML App) and a 45-second HMAC destination permit.
-- Clerk user IDs are explicitly approved, even after login. The destination is validated against **US, Canadian, and UK** numbering rules. North American 900 premium service and 976 exchange patterns are rejected, along with the configured UK premium, paging, and special-rate ranges. An optional test-recipient allowlist restricts dialing further.
+- Clerk user IDs are explicitly approved, even after login. The destination is validated against **US, Canadian, UK, and Australian** numbering rules. North American 900 premium service and 976 exchange patterns are rejected, along with the configured UK premium, paging, and special-rate ranges and Australian 19-prefixed premium services. An optional test-recipient allowlist restricts dialing further.
 - The Voice callback validates the Twilio request signature, the Twilio Account SID, the client identity, the signed operator/destination/caller-ID permit, and the destination and caller ID again. Arbitrary `To` or caller ID values from the browser are never trusted.
 - The origin check on the destination authorization API blocks ordinary cross-origin form submissions, but does not replace Clerk session verification.
 - This is a private **single-operator pilot**, not a hardened multi-tenant contact center. HMAC permits are short-lived but do not have persisted one-time redemption state. There is no durable per-user quota, rate limiting, contact permission enforcement, or real-time billing limit. Keep Twilio's geo permissions restricted and use account usage triggers and a low spend threshold; add durable quotas via Redis/database before scaling to multiple operators or exposing it beyond a private pilot.
