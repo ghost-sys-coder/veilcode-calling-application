@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { callingCountries, type DialingCountry } from "@/lib/calling-countries";
 import { validateContact } from "@/lib/contact-validation";
 import type { Contact, ContactInput } from "@/lib/contact-types";
@@ -44,10 +44,10 @@ export function ContactFormDialog({ contact, onClose, onSaved }: {
           <fieldset disabled={busy} className="contact-form-fields">
             <div className="contact-form-field"><Label htmlFor={`${id}-name`}>Name</Label><Input id={`${id}-name`} autoComplete="name" required maxLength={120} value={fields.name} onChange={(event)=>change("name",event.target.value)}/></div>
             <div className="contact-form-field"><Label htmlFor={`${id}-company`}>Company <span className="contact-optional">optional</span></Label><Input id={`${id}-company`} autoComplete="organization" maxLength={160} value={fields.company} onChange={(event)=>change("company",event.target.value)}/></div>
-            <div className="contact-form-field"><Label htmlFor={`${id}-country`}>Country</Label><NativeSelect id={`${id}-country`} className="w-full" value={fields.country} onChange={(event)=>{
-              const country=event.target.value as DialingCountry;
+            <div className="contact-form-field"><Label htmlFor={`${id}-country`}>Country</Label><Select disabled={busy} value={fields.country} onValueChange={value=>{
+              const country=value as DialingCountry;
               setFields((previous)=>({...previous,country,phone:callingCountries.find((item)=>item.code===country)!.prefix}));setDirty(true);setError("");
-            }}>{callingCountries.map((item)=><NativeSelectOption value={item.code} key={item.code}>{item.name} ({item.prefix})</NativeSelectOption>)}</NativeSelect></div>
+            }}><SelectTrigger id={`${id}-country`}><SelectValue/></SelectTrigger><SelectContent>{callingCountries.map((item)=><SelectItem value={item.code} key={item.code}>{item.name} ({item.prefix})</SelectItem>)}</SelectContent></Select></div>
             <div className="contact-form-field"><Label htmlFor={`${id}-phone`}>Phone number</Label><Input id={`${id}-phone`} type="tel" autoComplete="tel" required maxLength={30} value={fields.phone} onChange={(event)=>change("phone",event.target.value)} aria-describedby={`${id}-phone-hint`}/><p id={`${id}-phone-hint`}>Enter a local or international number for the selected country.</p></div>
             <div className="contact-form-field"><Label htmlFor={`${id}-notes`}>Notes <span className="contact-optional">optional</span></Label><Textarea id={`${id}-notes`} rows={4} maxLength={5000} value={fields.notes} onChange={(event)=>change("notes",event.target.value)} placeholder="Context to remember before you call"/></div>
           </fieldset>

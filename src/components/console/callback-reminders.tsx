@@ -61,10 +61,10 @@ export function CallbackReminderProvider({children}:{children:React.ReactNode}) 
   return <ReminderContext.Provider value={{data,error,refresh,busy,open,setOpen,act}}>{children}</ReminderContext.Provider>;
 }
 
-export function CallbackSidebarCount() {
+export function CallbackSidebarCount({className=""}:{className?:string}) {
   const {data}=useReminders();
   if (!data?.attentionCount) return null;
-  return <SidebarMenuBadge className="rounded bg-secondary" aria-label={`${data.attentionCount} callbacks due today or overdue`}>{data.attentionCount>99 ? "99+" : data.attentionCount}</SidebarMenuBadge>;
+  return <SidebarMenuBadge className={`rounded bg-secondary ${className}`} aria-label={`${data.attentionCount} callbacks due today or overdue`}>{data.attentionCount>99 ? "99+" : data.attentionCount}</SidebarMenuBadge>;
 }
 
 export function CallbackReminders() {

@@ -6,7 +6,7 @@ import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogT
 import {AlertDialog,AlertDialogAction,AlertDialogCancel,AlertDialogContent,AlertDialogDescription,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle} from "@/components/ui/alert-dialog";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {NativeSelect,NativeSelectOption} from "@/components/ui/native-select";
+import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
 import {Table,TableBody,TableCell,TableHead,TableHeader,TableRow} from "@/components/ui/table";
 import {callingCountries,type DialingCountry} from "@/lib/calling-countries";
 import {contactCsvTemplate,importFields,importMaxBytes,parseContactCsv,rejectedContactsCsv,suggestMapping,
@@ -67,10 +67,10 @@ export function ContactImportDialog({onClose,onImported,onImportUncertain}:{onCl
           {source && mapping && <>
             <p className="contact-import-file">{source.name} · {source.document.records.length} records</p>
             <div className="contact-import-mapping">{importFields.map((field)=><div key={field}><Label htmlFor={`csv-map-${field}`}>{labels[field]}{field==="name" || field==="phone" ? " *" : " (optional)"}</Label>
-              <NativeSelect id={`csv-map-${field}`} value={mapping[field] ?? ""} onChange={(event)=>{setMapping((previous)=>({...previous!,[field]:event.target.value==="" ? null : Number(event.target.value)}));setReport(null);setError("");setPage(0);}}>
-                <NativeSelectOption value="">{field==="name" || field==="phone" ? "Choose a column" : "Not mapped"}</NativeSelectOption>{source.document.headers.map((header,index)=><NativeSelectOption key={index} value={index}>{index+1} / {header || `Column ${index+1}`}</NativeSelectOption>)}
-              </NativeSelect></div>)}
-              <div><Label htmlFor="csv-default-country">Country for blank / unmapped values</Label><NativeSelect id="csv-default-country" value={defaultCountry} onChange={(event)=>{setDefaultCountry(event.target.value as DialingCountry);setReport(null);setError("");setPage(0);}}>{callingCountries.map((country)=><NativeSelectOption key={country.code} value={country.code}>{country.name} ({country.prefix})</NativeSelectOption>)}</NativeSelect></div>
+              <Select disabled={busy} value={mapping[field]===null ? "unmapped" : String(mapping[field])} onValueChange={value=>{setMapping((previous)=>({...previous!,[field]:value==="unmapped" ? null : Number(value)}));setReport(null);setError("");setPage(0);}}>
+                <SelectTrigger id={`csv-map-${field}`}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="unmapped">{field==="name" || field==="phone" ? "Choose a column" : "Not mapped"}</SelectItem>{source.document.headers.map((header,index)=><SelectItem key={index} value={String(index)}>{index+1} / {header || `Column ${index+1}`}</SelectItem>)}</SelectContent>
+              </Select></div>)}
+              <div><Label htmlFor="csv-default-country">Country for blank / unmapped values</Label><Select disabled={busy} value={defaultCountry} onValueChange={value=>{setDefaultCountry(value as DialingCountry);setReport(null);setError("");setPage(0);}}><SelectTrigger id="csv-default-country"><SelectValue/></SelectTrigger><SelectContent>{callingCountries.map((country)=><SelectItem key={country.code} value={country.code}>{country.name} ({country.prefix})</SelectItem>)}</SelectContent></Select></div>
             </div>
             <p className="contact-import-hint">Country accepts US, CA, GB/UK, AU, or their names. Local numbers use that country’s dialing rules.</p>
             <Button type="submit" variant="outline" disabled={mapping.name===null || mapping.phone===null || busy}>{phase==="preview" ? "Checking contacts…" : "Preview contacts"}</Button>

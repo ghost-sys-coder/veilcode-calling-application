@@ -5,7 +5,7 @@ import { ArrowUpRight, CalendarClock, Headphones, Phone, RefreshCw, Star, Users 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { dashboardRanges, type DashboardRange, type OutreachDashboard } from "@/lib/dashboard-types";
@@ -51,9 +51,9 @@ export function DashboardWorkspace({configured}:{configured:boolean}) {
   ] : [];
   return <div className="dashboard-page contacts-page shell">
     <div className="history-title dashboard-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / OUTREACH OVERVIEW</p><h1>A little clarity.<br/>A better next call<span>.</span></h1><p>Your activity, your callbacks, and a clear place to start.</p></div><Button asChild><Link href="/console"><Phone aria-hidden="true"/> Make a call <ArrowUpRight aria-hidden="true"/></Link></Button></div>
-    <div className="dashboard-toolbar"><div><Label htmlFor="dashboard-range">Activity period</Label><NativeSelect id="dashboard-range" disabled={!configured || loading} value={range} onChange={(event)=>{setRange(event.target.value as DashboardRange);setData(null);setLoading(true);setError("");}}>
-      {dashboardRanges.map((item)=><NativeSelectOption key={item.value} value={item.value}>{item.label}</NativeSelectOption>)}
-    </NativeSelect></div><div className="dashboard-updated"><span>{data ? `Updated ${new Date(data.generatedAt).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit",timeZone:data.timezone})}` : ""}</span><Button variant="ghost" size="sm" onClick={reload} disabled={!configured || loading}><RefreshCw size={15} aria-hidden="true"/>{loading ? "Refreshing…" : "Refresh"}</Button></div></div>
+    <div className="dashboard-toolbar"><div><Label htmlFor="dashboard-range">Activity period</Label><Select disabled={!configured || loading} value={range} onValueChange={value=>{setRange(value as DashboardRange);setData(null);setLoading(true);setError("");}}>
+      <SelectTrigger id="dashboard-range"><SelectValue/></SelectTrigger><SelectContent>{dashboardRanges.map((item)=><SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+    </Select></div><div className="dashboard-updated"><span>{data ? `Updated ${new Date(data.generatedAt).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit",timeZone:data.timezone})}` : ""}</span><Button variant="ghost" size="sm" onClick={reload} disabled={!configured || loading}><RefreshCw size={15} aria-hidden="true"/>{loading ? "Refreshing…" : "Refresh"}</Button></div></div>
     <p role="status" aria-live="polite" className="sr-only">{loading ? "Loading dashboard." : data ? "Dashboard updated." : ""}</p>
     {!configured && <div className="history-empty"><h2>Your overview is almost ready.</h2><p>Dashboard storage is not connected yet. You can continue calling from the dialer.</p></div>}
     {error && <div className="review-message" role="alert">{error}<Button variant="outline" size="sm" disabled={loading} onClick={reload}>Retry</Button></div>}

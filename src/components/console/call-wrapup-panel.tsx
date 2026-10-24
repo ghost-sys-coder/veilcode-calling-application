@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CallRecordings } from "@/components/console/call-recordings";
 import { callOutcomes, type CallOutcome } from "@/lib/followup-types";
@@ -78,13 +78,13 @@ export function CallWrapUpPanel({callSid,onDirtyChange,onBusyChange}:{callSid:st
         finally {saving.current=false;if (mounted.current) setBusy(false);}
       }}>
         <fieldset className="followup-fields" disabled={loading || busy || !record}>
-          <div className="wrapup-field-row"><div><Label htmlFor={`${id}-outcome`}>Call outcome</Label><NativeSelect id={`${id}-outcome`} value={outcome} onChange={event=>{setOutcome(event.target.value as CallOutcome);setCompleted(false);changed();}}>
-            {callOutcomes.map(item=><NativeSelectOption key={item.value} value={item.value}>{item.label}</NativeSelectOption>)}
-          </NativeSelect></div><div><Label htmlFor={`${id}-rating`}>Audio quality</Label><NativeSelect id={`${id}-rating`} value={rating} onChange={event=>{setRating(event.target.value);changed();}}>
-            <NativeSelectOption value="">Not rated</NativeSelectOption>{[1,2,3,4,5].map(value=><NativeSelectOption key={value} value={value}>{value} / 5{value===1 ? " · Poor" : value===5 ? " · Excellent" : ""}</NativeSelectOption>)}
-          </NativeSelect></div></div>
+          <div className="wrapup-field-row"><div><Label htmlFor={`${id}-outcome`}>Call outcome</Label><Select disabled={loading || busy || !record} value={outcome} onValueChange={value=>{setOutcome(value as CallOutcome);setCompleted(false);changed();}}>
+            <SelectTrigger id={`${id}-outcome`}><SelectValue/></SelectTrigger><SelectContent>{callOutcomes.map(item=><SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+          </Select></div><div><Label htmlFor={`${id}-rating`}>Audio quality</Label><Select disabled={loading || busy || !record} value={rating || "unrated"} onValueChange={value=>{setRating(value==="unrated" ? "" : value);changed();}}>
+            <SelectTrigger id={`${id}-rating`}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="unrated">Not rated</SelectItem>{[1,2,3,4,5].map(value=><SelectItem key={value} value={String(value)}>{value} / 5{value===1 ? " · Poor" : value===5 ? " · Excellent" : ""}</SelectItem>)}</SelectContent>
+          </Select></div></div>
           {outcome==="callback_needed" && <><div><Label htmlFor={`${id}-date`}>Callback date and time</Label><Input id={`${id}-date`} name="callbackAt" type="datetime-local" required min="2000-01-01T00:00" max="2100-12-31T23:59" value={date} onChange={event=>{setDate(event.target.value);setCompleted(false);changed();}}/><p className="followup-hint">Your local time ({Intl.DateTimeFormat().resolvedOptions().timeZone}). Email reminders follow your preferences in the reminder inbox.</p></div>
-            <div><Label htmlFor={`${id}-completed`}>Follow-up status</Label><NativeSelect id={`${id}-completed`} value={completed ? "completed" : "open"} onChange={event=>{setCompleted(event.target.value==="completed");changed();}}><NativeSelectOption value="open">Open</NativeSelectOption><NativeSelectOption value="completed">Completed</NativeSelectOption></NativeSelect></div></>}
+            <div><Label htmlFor={`${id}-completed`}>Follow-up status</Label><Select disabled={loading || busy || !record} value={completed ? "completed" : "open"} onValueChange={value=>{setCompleted(value==="completed");changed();}}><SelectTrigger id={`${id}-completed`}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="open">Open</SelectItem><SelectItem value="completed">Completed</SelectItem></SelectContent></Select></div></>}
           <div><Label htmlFor={`${id}-note`}>Outcome / callback note</Label><Textarea id={`${id}-note`} rows={3} maxLength={5000} value={note} onChange={event=>{setNote(event.target.value);changed();}} placeholder="What happened, and what should you discuss next?"/></div>
           <Button type="submit" disabled={!dirty || busy}>{busy ? "Saving…" : "Save call review"}</Button>
         </fieldset>

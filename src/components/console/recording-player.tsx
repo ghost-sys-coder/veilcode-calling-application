@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useRef, useState } from "react";
 import { BookmarkPlus, Download, Trash2 } from "lucide-react";
 import { recordingAccessible } from "@/lib/review-validation";
@@ -28,7 +28,7 @@ export function RecordingPlayer({ recording, bookmarks, onBookmark, onDelete }: 
       <audio ref={audio} controls preload="none" src={media} onError={() => setAudioError(true)} aria-label="Call recording playback" />
       {audioError && <p role="alert">Audio could not be loaded. Refresh the recording or try again shortly.</p>}
       <div className="review-player-actions">
-        <Label>Speed <NativeSelect aria-label="Playback speed" defaultValue="1" onChange={(event) => { if (audio.current) audio.current.playbackRate=Number(event.target.value); }}>{[0.75,1,1.25,1.5,2].map((speed) => <NativeSelectOption key={speed} value={speed}>{speed}×</NativeSelectOption>)}</NativeSelect></Label>
+        <Label>Speed <Select defaultValue="1" onValueChange={value=>{if (audio.current) audio.current.playbackRate=Number(value);}}><SelectTrigger aria-label="Playback speed"><SelectValue/></SelectTrigger><SelectContent>{[0.75,1,1.25,1.5,2].map((speed) => <SelectItem key={speed} value={String(speed)}>{speed}×</SelectItem>)}</SelectContent></Select></Label>
         {onBookmark && <Button variant="ghost" type="button" className="review-small-button" onClick={() => onBookmark(Math.floor(audio.current?.currentTime || 0))}><BookmarkPlus size={15}/> Bookmark</Button>}
         <Button asChild variant="outline" className="review-small-button"><a href={`${media}?download=1`} download><Download size={15}/> Download</a></Button>
       </div>

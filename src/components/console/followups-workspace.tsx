@@ -4,7 +4,7 @@ import Link from "next/link";
 import { CalendarClock, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -49,9 +49,9 @@ export function FollowUpsWorkspace({configured}:{configured:boolean}) {
   function close(){if (saving) return;if (dirty) setDiscard(true);else setEditor(null);}
   return <div className="contacts-page followups-page shell">
     <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / NEXT CONVERSATIONS</p><h1>Keep the conversation going<span>.</span></h1><p>Your callbacks, in order. Make room for the people who asked to hear from you.</p></div><Button asChild variant="outline"><Link href="/console/history">Open call history</Link></Button></div>
-    <div className="followups-toolbar"><div><Label htmlFor="followup-view">Show follow-ups</Label><NativeSelect id="followup-view" disabled={!configured || loading || more} value={view} onChange={(event)=>{setView(event.target.value as FollowUpView);setLoading(true);setItems([]);setError("");}}>
-      <NativeSelectOption value="open">All open callbacks</NativeSelectOption><NativeSelectOption value="overdue">Overdue</NativeSelectOption><NativeSelectOption value="upcoming">Upcoming</NativeSelectOption><NativeSelectOption value="completed">Completed</NativeSelectOption>
-    </NativeSelect></div><Button variant="ghost" disabled={!configured || loading || more} onClick={reload}>Refresh</Button></div>
+    <div className="followups-toolbar"><div><Label htmlFor="followup-view">Show follow-ups</Label><Select disabled={!configured || loading || more} value={view} onValueChange={value=>{setView(value as FollowUpView);setLoading(true);setItems([]);setError("");}}>
+      <SelectTrigger id="followup-view"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="open">All open callbacks</SelectItem><SelectItem value="overdue">Overdue</SelectItem><SelectItem value="upcoming">Upcoming</SelectItem><SelectItem value="completed">Completed</SelectItem></SelectContent>
+    </Select></div><Button variant="ghost" disabled={!configured || loading || more} onClick={reload}>Refresh</Button></div>
     <p className="contacts-feedback" role="status">{loading ? "Loading follow-ups…" : ""}</p>
     {error && <div className="review-message" role="alert">{error}<Button variant="outline" size="sm" disabled={loading || more} onClick={reload}>Retry</Button></div>}
     {!configured ? <div className="history-empty"><h2>Follow-up storage is not connected yet.</h2><p>You can continue calling from the dialer.</p></div>

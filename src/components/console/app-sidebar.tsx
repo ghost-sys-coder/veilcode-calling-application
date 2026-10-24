@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, CalendarClock, History, LayoutDashboard, Phone, ShieldCheck, Users } from "lucide-react";
+import { ArrowUpRight, ShieldCheck } from "lucide-react";
+import { consoleDestinationActive, consoleDestinations } from "@/lib/console-navigation";
+import { useCompactNavigation } from "@/hooks/use-compact-navigation";
 import { BrandMark } from "@/components/landing/brand-mark";
 import { CallbackSidebarCount } from "@/components/console/callback-reminders";
 import {
@@ -10,17 +12,11 @@ import {
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar,
 } from "@/components/ui/sidebar";
 
-const destinations = [
-  { href: "/console/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/console", label: "Dialer", icon: Phone },
-  { href: "/console/history", label: "Call history", icon: History },
-  { href: "/console/contacts", label: "Contacts", icon: Users },
-  { href: "/console/followups", label: "Follow-ups", icon: CalendarClock },
-];
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
+  const compact=useCompactNavigation();
+  if (compact) return null;
   return <Sidebar collapsible="icon" className="workspace-sidebar">
     <SidebarHeader className="workspace-sidebar-brand"><BrandMark /></SidebarHeader>
     <SidebarContent>
@@ -28,9 +24,9 @@ export function AppSidebar() {
         <SidebarGroupLabel>Workspace</SidebarGroupLabel>
         <nav aria-label="Workspace navigation">
           <SidebarMenu>
-            {destinations.map(({ href, label, icon: Icon }) => <SidebarMenuItem key={href}>
-              <SidebarMenuButton asChild isActive={pathname === href} tooltip={label}>
-                <Link href={href} aria-current={pathname === href ? "page" : undefined} onClick={() => setOpenMobile(false)}>
+            {consoleDestinations.map(({ href, label, icon: Icon }) => <SidebarMenuItem key={href}>
+              <SidebarMenuButton asChild isActive={consoleDestinationActive(pathname,href)} tooltip={label}>
+                <Link href={href} aria-current={consoleDestinationActive(pathname,href) ? "page" : undefined} onClick={() => setOpenMobile(false)}>
                   <Icon aria-hidden="true"/><span>{label}</span>
                 </Link>
               </SidebarMenuButton>

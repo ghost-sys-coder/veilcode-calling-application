@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bookmark, RefreshCw, Save, X } from "lucide-react";
 import { RecordingPlayer } from "@/components/console/recording-player";
@@ -62,8 +62,8 @@ export function CallReviewPanel({ call, onDirtyChange, onUpdated }: {
         } catch (issue) { if (mounted.current) setMessage(issue instanceof Error ? issue.message : "Delete failed."); }
       }}/>)}
     <div className="review-section-title"><h3>Quality review</h3><span>{dirty ? "Unsaved changes" : "Personal notes"}</span></div>
-    <Label className="review-field">Call quality<NativeSelect value={rating ?? ""} disabled={saving} onChange={(event) => { setRating(event.target.value ? Number(event.target.value) : null); changed(); }}>
-      <NativeSelectOption value="">Not rated</NativeSelectOption>{[1,2,3,4,5].map((value) => <NativeSelectOption key={value} value={value}>{value} / 5{value === 1 ? " — Poor" : value === 5 ? " — Excellent" : ""}</NativeSelectOption>)}</NativeSelect></Label>
+    <Label className="review-field">Call quality<Select value={rating===null ? "unrated" : String(rating)} disabled={saving} onValueChange={value=>{setRating(value==="unrated" ? null : Number(value));changed();}}>
+      <SelectTrigger aria-label="Call quality"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="unrated">Not rated</SelectItem>{[1,2,3,4,5].map((value) => <SelectItem key={value} value={String(value)}>{value} / 5{value === 1 ? " — Poor" : value === 5 ? " — Excellent" : ""}</SelectItem>)}</SelectContent></Select></Label>
     <Label className="review-field">Review notes<Textarea value={notes} maxLength={10000} rows={5} disabled={saving} placeholder="What went well? What would you change next time?" onChange={(event) => { setNotes(event.target.value); changed(); }}/></Label>
     {bookmarks.length > 0 && <div className="review-bookmarks"><h3><Bookmark size={15}/> Bookmarked moments</h3>{bookmarks.map((bookmark,index) => <div key={bookmark.id}>
       <span>{Math.floor(bookmark.seconds/60)}:{String(bookmark.seconds%60).padStart(2,"0")}</span><Input aria-label={`Note for bookmark ${index+1}`} value={bookmark.note} maxLength={500} disabled={saving} placeholder="Why this moment matters" onChange={(event) => { setBookmarks((previous) => previous.map((item) => item.id === bookmark.id ? {...item,note:event.target.value} : item)); changed(); }}/>

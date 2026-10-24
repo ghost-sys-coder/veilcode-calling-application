@@ -61,7 +61,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
   const isBusy = state === "preparing" || state === "dialing" || state === "connected";
 
   useEffect(()=>{
-    if (!wrapUpDirty && !wrapUpBusy) return;
+    if (!wrapUpDirty && !wrapUpBusy && !isBusy) return;
     const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
     const guardLink=(event:MouseEvent)=>{
       if (event.defaultPrevented || event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -74,7 +74,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
     window.addEventListener("beforeunload",warn);
     document.addEventListener("click",guardLink,true);
     return ()=>{window.removeEventListener("beforeunload",warn);document.removeEventListener("click",guardLink,true);};
-  },[wrapUpDirty,wrapUpBusy]);
+  },[wrapUpDirty,wrapUpBusy,isBusy]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -364,6 +364,6 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
     <div className="terminal-bottom"><span>ENCRYPTED SIGNALING VIA TWILIO</span><span>MICROPHONE ACCESS REQUIRED</span></div>
   </section>
     <AlertDialog open={confirmNextCall} onOpenChange={setConfirmNextCall}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Start the next call?</AlertDialogTitle><AlertDialogDescription>Your current call review has unsaved changes. Discard them to place the next call, or keep editing and save first.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep editing</AlertDialogCancel><Button type="button" disabled={wrapUpBusy} onClick={()=>{setConfirmNextCall(false);void dial(true);}}>Discard and call</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>
-    <AlertDialog open={pendingNavigation!==null} onOpenChange={open=>{if (!open) setPendingNavigation(null);}}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{wrapUpBusy ? "Call review is busy" : "Leave this call review?"}</AlertDialogTitle><AlertDialogDescription>{wrapUpBusy ? "Wait for the current request to finish before leaving." : "Your changes have not been saved. Stay here to save them, or discard the draft and leave."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Stay here</AlertDialogCancel><Button type="button" disabled={wrapUpBusy} onClick={()=>{const href=pendingNavigation;setPendingNavigation(null);setWrapUpDirty(false);if (href) router.push(href);}}>Discard and leave</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <AlertDialog open={pendingNavigation!==null} onOpenChange={open=>{if (!open) setPendingNavigation(null);}}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{isBusy ? "Leave this call?" : wrapUpBusy ? "Call review is busy" : "Leave this call review?"}</AlertDialogTitle><AlertDialogDescription>{isBusy ? "Leaving the dialer ends the current call. Stay on the call, or end it before opening another section." : wrapUpBusy ? "Wait for the current request to finish before leaving." : "Your changes have not been saved. Stay here to save them, or discard the draft and leave."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{isBusy ? "Stay on call" : "Stay here"}</AlertDialogCancel><Button type="button" disabled={wrapUpBusy} onClick={()=>{const href=pendingNavigation;setPendingNavigation(null);setWrapUpDirty(false);if (isBusy) hangUp();if (href) router.push(href);}}>{isBusy ? "End call and leave" : "Discard and leave"}</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
 }
