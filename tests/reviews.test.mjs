@@ -38,7 +38,7 @@ test("retention configuration rejects invalid day counts", () => {
 test("review authentication requires a session, approved operator and same-origin mutations", async () => {
   for (const [userId,approved,origin,expected] of [[null,true,null,401],["user_test",false,null,403],["user_test",true,"https://other.test",403]]) {
     const auth = loadModule("../src/lib/review-auth.ts",{
-      "server-only":{},"@clerk/nextjs/server":{auth:async()=>({userId})},"@/lib/access":{isApprovedOperator:()=>approved},
+      "server-only":{},"@clerk/nextjs/server":{auth:async()=>({userId})},"@/lib/access":{operatorHasAccess:()=>approved},
       "@/lib/voice-responses":{voiceJson:json,isSameOrigin:(r)=>r.headers.get("origin")===new URL(r.url).origin},
     });
     const response = await auth.reviewOperator(origin ? new Request("https://app.test/api",{headers:{origin}}) : undefined);

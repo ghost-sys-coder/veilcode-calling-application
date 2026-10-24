@@ -70,7 +70,7 @@ test("dispatch retries use the frozen message and key; changed recipients and st
   const frozen={from:"sender@example.com",to:[recipient],subject:"Saved",text:"Saved",html:"<p>Saved</p>"};
   const {MailError}=loadModule("../src/lib/resend-mail.ts",{"server-only":{}});
   const service=loadModule("../src/lib/email-reminder-service.ts",{
-    "server-only":{},"@/lib/access":{isApprovedOperator:id=>id==="owner"},"@/lib/email-reminder-config":{emailReminderConfig:()=>({apiKey:"test",from:"sender@example.com",site:"https://call.veilcode.studio"})},
+    "server-only":{},"@/lib/access":{operatorHasAccess:id=>id==="owner",approvedOperatorIds:async()=>["owner"]},"@/lib/email-reminder-config":{emailReminderConfig:()=>({apiKey:"test",from:"sender@example.com",site:"https://call.veilcode.studio"})},
     "@/lib/email-recipient":{verifiedOperatorEmail:async()=>recipient},"@/lib/email-reminder-message":message,
     "@/lib/email-reminder-store":{claimEmailJob:async()=>jobs.shift() || null,prepareEmailJob:async()=>prepared,finishEmailJob:async(job,result)=>finished.push(result)},
     "@/lib/resend-mail":{MailError,sendReminderEmail:async(key,payload,idempotency)=>{sent++;assert.deepEqual(payload,frozen);assert.equal(idempotency,`veilcall-callback/${callSid}/1`);if(fail)throw new Error("uncertain");return "accepted";}},

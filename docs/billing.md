@@ -1,15 +1,16 @@
 # Stripe configuration and payment proposal
 
-Updated 24 October 2026. The environment selection below is implemented. Pricing,
-Checkout, subscriptions, usage billing, and paid onboarding below are proposals;
-they are not enabled by installing the SDK or supplying API keys.
+Updated 25 October 2026. Environment selection is implemented. An owner-only
+[billing sandbox and customer approval workflow](billing-pilot.md) is now built.
+The commercial pricing and live-launch steps below remain proposals; live payments
+and paid calling are disabled.
 
 ## Implemented environment selection
 
 All future server billing code must obtain its Stripe client from
 `stripeService()` in `src/lib/stripe.ts`. The official SDK is pinned to 23.0.1;
-it uses that version's default Stripe API version. There is no payment endpoint
-or client-side Stripe script in this release.
+it uses that version's default Stripe API version. The sandbox uses hosted
+Checkout and a required signed webhook; it does not load Stripe card fields.
 
 | Runtime | Selected variable | Required key mode |
 | --- | --- | --- |
@@ -37,10 +38,10 @@ Development, and keep it in the ignored local environment file. Vercel changes
 need a new deployment. Neither key belongs in a `NEXT_PUBLIC_` variable.
 
 Products, Prices, Customers and subscriptions are isolated between Stripe test
-and live modes. They will need separate IDs/configuration when billing is built.
+and live modes. The sandbox has test-only catalog IDs; live IDs are not configured.
 Webhook signing secrets are separate from API keys and must also be scoped by
 environment. A separate Stripe sandbox is preferable for new development.
-No webhook secret or product/price variable is needed for this foundation alone.
+The sandbox's additional test variables are documented in `billing-pilot.md`.
 Prefix validation verifies key type/mode, not whether a key is unexpired or has
 the permissions that future Checkout, Billing and Portal operations will need.
 
@@ -162,10 +163,10 @@ cost later without silently changing the customer's agreed rate.
    applicable active registrations, not just an enabled flag. Do not treat
    test/live API keys as evidence the Stripe business is activated for payouts.
 
-Neither open onboarding nor the existing owner's access has changed in this
-release. Paid account state, a credit ledger, spend reservations, one-use permits,
-per-account caller-ID allocation, payment webhooks, Checkout and Customer Portal
-remain implementation work before a paid public launch.
+The existing owner's pilot access is preserved. Customer workspace approval,
+per-account caller-ID allocation, and the test-mode payment/credit workflow are
+implemented. Live rate cards, real-call permit integration, provider reconciliation,
+approved pricing/policies and final payment validation remain before a paid launch.
 
 ## Validation
 

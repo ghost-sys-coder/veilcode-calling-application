@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, ShieldCheck, Phone } from "lucide-react";
+import { ArrowUpRight, ShieldCheck, Phone, CreditCard, Users } from "lucide-react";
 import { consoleDestinationActive, consoleDestinations } from "@/lib/console-navigation";
 import { useCompactNavigation } from "@/hooks/use-compact-navigation";
 import { BrandMark } from "@/components/landing/brand-mark";
@@ -12,7 +12,7 @@ import {
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar,
 } from "@/components/ui/sidebar";
 
-export function AppSidebar() {
+export function AppSidebar({admin=false}:{admin?:boolean}) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   const compact=useCompactNavigation();
@@ -38,6 +38,8 @@ export function AppSidebar() {
     </SidebarContent>
     <SidebarFooter>
       <SidebarMenu>
+        <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/billing")} tooltip="Billing"><Link href="/console/billing"><CreditCard aria-hidden="true"/><span>Billing & credit</span></Link></SidebarMenuButton></SidebarMenuItem>
+        {admin && <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/customers")} tooltip="Customer access"><Link href="/console/customers"><Users aria-hidden="true"/><span>Customer access</span></Link></SidebarMenuButton></SidebarMenuItem>}
         <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/numbers")} tooltip="Phone numbers"><Link href="/console/numbers" aria-current={pathname.startsWith("/console/numbers") ? "page" : undefined}><Phone aria-hidden="true"/><span>Phone numbers</span></Link></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton asChild tooltip="Visit website">
           <Link href="/"><ArrowUpRight aria-hidden="true"/><span>Visit website</span></Link>

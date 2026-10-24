@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import twilio from "twilio";
-import { isApprovedOperator } from "@/lib/access";
+import { operatorHasAccess as isApprovedOperator } from "@/lib/access";
 import { getVoiceConfig } from "@/lib/voice-config";
 import { getVoiceOutcome } from "@/lib/voice-outcome";
 import { voiceJson } from "@/lib/voice-responses";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return voiceJson({ error: "Sign in to continue." }, 401);
-  if (!isApprovedOperator(userId)) return voiceJson({ error: "This user is not an approved operator." }, 403);
+  if (!(await isApprovedOperator(userId))) return voiceJson({ error: "This user is not an approved operator." }, 403);
   const callSid = new URL(request.url).searchParams.get("callSid");
   if (!callSid || !/^CA[0-9a-f]{32}$/i.test(callSid)) {
     return voiceJson({ error: "Invalid call reference." }, 400);
