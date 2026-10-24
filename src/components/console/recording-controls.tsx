@@ -29,11 +29,11 @@ export function RecordingControls({ callSid, enabled }: { callSid:string; enable
           if (response.ok) setStatus(data);
           else setMessage(data.error || "Recording status is unavailable. Refresh to retry.");
         }
-      } catch { /* A manual refresh can retry while the call remains active. */ }
+      } catch { if (mounted.current && !controller.signal.aborted && version === mutation.current) setMessage("Recording status is unavailable. Refresh to retry; recording may still be active."); }
       finally { refreshing = false; }
     }
     void refresh();
-    const timer = window.setInterval(() => void refresh(),8000);
+    const timer = window.setInterval(() => void refresh(),5000);
     return () => { mounted.current = false; controller.abort(); window.clearInterval(timer); };
   },[callSid]);
 
@@ -58,15 +58,16 @@ export function RecordingControls({ callSid, enabled }: { callSid:string; enable
   const active = status?.active;
   const recording = active?.status === "in-progress";
   return <section className="recording-controls" aria-label="Call recording">
-    <div className="recording-controls-heading"><strong><Circle size={12} fill={recording ? "currentColor" : "none"}/>{recording ? "RECORDING ON" : active ? "RECORDING PAUSED" : "RECORDING OFF"}</strong>
+    <div className="recording-controls-heading"><strong><Circle size={12} fill={recording ? "currentColor" : "none"}/>{recording ? "RECORDING ON" : active ? "RECORDING PAUSED" : !status ? "CHECKING RECORDING" : "RECORDING OFF"}</strong>
       <Button variant="ghost" type="button" className="review-icon-button" aria-label="Refresh recording status" onClick={() => void change("refresh")} disabled={busy}><RefreshCw size={15}/></Button></div>
     <Label className="recording-consent" htmlFor={`recording-consent-${callSid}`}><Checkbox id={`recording-consent-${callSid}`} checked={consent} disabled={busy || recording}
       onCheckedChange={(checked) => setConsent(checked === true)}/><span>I informed all participants that this call will be recorded for quality review, and they agreed.</span></Label>
     <div className="recording-buttons">
-      {!active ? <Button variant="ghost" type="button" className="review-small-button" disabled={!enabled || !consent || busy || !status} onClick={() => void change("start")}><Circle size={14}/> Start recording</Button>
+      {!active ? <Button variant="ghost" type="button" className="review-small-button" disabled={!enabled || !consent || busy || !status?.canRecord} onClick={() => void change("start")}><Circle size={14}/> Start recording</Button>
         : <><Button variant="ghost" type="button" className="review-small-button" disabled={busy || (!recording && (!enabled || !consent))} onClick={() => void change(recording ? "pause" : "resume")}>{recording ? <Pause size={14}/> : <Play size={14}/>} {recording ? "Pause" : "Resume"}</Button>
           <Button variant="ghost" type="button" className="review-small-button" disabled={busy} onClick={() => void change("stop")}><Square size={14}/> Stop</Button></>}
     </div>
+    {enabled && !status?.canRecord && !active && <p>Waiting for the recipient to answer. Recording can start once they answer and agree.</p>}
     <p role="status" aria-live="polite">{enabled ? message : "New recordings are disabled. You can pause or stop an active recording."}</p>
   </section>;
 }

@@ -43,5 +43,5 @@ export default async function ConsolePage({ searchParams }: { searchParams:Promi
       initialContact={id:call.callSid,name:call.to,phone:call.to,country};
     } catch {contactError="This callback could not be loaded. Choose another follow-up or enter the number manually.";}
   }
-  return <CallWorkspace configured={status.ready} setupIssues={status.missing} callerIds={status.callerIds} recordingEnabled={reviewStorageConfigured() && process.env.VOICE_RECORDING_ENABLED === "true"} initialContact={initialContact} contactError={contactError}/>;
+  return <CallWorkspace configured={status.ready} setupIssues={status.missing} callerIds={status.callerIds} reviewEnabled={reviewStorageConfigured()} recordingEnabled={reviewStorageConfigured() && process.env.VOICE_RECORDING_ENABLED === "true"} initialContact={initialContact} contactError={contactError}/>;
 }

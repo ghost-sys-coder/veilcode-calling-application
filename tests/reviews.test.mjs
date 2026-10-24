@@ -46,13 +46,14 @@ test("review authentication requires a session, approved operator and same-origi
   }
 });
 
-function recordingService({owner="user_test",answered=true,active=null,lease=true}={}) {
+function recordingService({owner="user_test",answered=true,active=null,lease=true,processingRead=false,failUpdate=false}={}) {
   const events=[];
-  let stored=[];
+  let stored=active ? [{...active,expiresAt:new Date(Date.now()+86400000).toISOString(),deletedAt:null}] : [];
   let provider=active ? [active] : [];
+  let updateFailed=false;
   const calls=()=>({fetch:async()=>({from:`client:${owner}`,parentCallSid:null,startTime:new Date(),dateCreated:new Date(),status:"in-progress"}),
-    recordings:Object.assign((sid)=>({update:async(options)=>{events.push(`update:${options.status}`);const record={...provider.find((r)=>r.sid===sid),status:options.status};provider=[record];return record;}}),{
-      list:async()=>provider,
+    recordings:Object.assign((sid)=>({update:async(options)=>{events.push(`update:${options.status}`);if (failUpdate && !updateFailed) {updateFailed=true;throw new Error("Uncertain provider response");} const record={...provider.find((r)=>r.sid===sid),status:options.status};provider=[record];return record;}}),{
+      list:async()=>processingRead ? provider.map(item=>({...item,status:["in-progress","paused"].includes(item.status) ? "processing" : item.status})) : provider,
       create:async()=>{events.push("create");const record={sid:recordingSid,callSid,status:"in-progress",duration:"0",channels:2,dateCreated:new Date()};provider=[record];return record;},
     })});
   calls.list=async()=>[{to:"+61412345678",from:"+12125550123",status:answered ? "in-progress" : "ringing",duration:"0"}];
@@ -77,6 +78,29 @@ test("recording cannot start for another operator, before answer, or without con
     try { await assert.rejects(service.controlRecording({callSid,action:"start",...input},"user_test"),(error)=>error.status===status); assert.ok(!events.includes("create")); }
     finally { if(old===undefined)delete process.env.VOICE_RECORDING_ENABLED;else process.env.VOICE_RECORDING_ENABLED=old; }
   }
+});
+
+test("recording controls retain confirmed in-flight state when Twilio reads report processing",async()=>{
+  const old=process.env.VOICE_RECORDING_ENABLED;process.env.VOICE_RECORDING_ENABLED="true";
+  try {
+    for (const action of ["pause","resume","stop"]) {
+      const {service,events}=recordingService({active:{sid:recordingSid,callSid,status:action==="resume" ? "paused" : "in-progress",dateCreated:new Date(),channels:2},processingRead:true});
+      await service.controlRecording({callSid,action,recordingSid,consentConfirmed:true},"user_test");
+      assert.ok(events.includes(`update:${action==="pause" ? "paused" : action==="resume" ? "in-progress" : "stopped"}`));
+    }
+    const duplicate=recordingService({active:{sid:recordingSid,callSid,status:"paused",dateCreated:new Date(),channels:2},processingRead:true});
+    await assert.rejects(duplicate.service.controlRecording({callSid,action:"start",consentConfirmed:true},"user_test"),error=>error.status===409);
+    assert.ok(!duplicate.events.includes("create"));
+  } finally {if (old===undefined)delete process.env.VOICE_RECORDING_ENABLED;else process.env.VOICE_RECORDING_ENABLED=old;}
+});
+
+test("an uncertain resume attempts to stop recording and releases its lease",async()=>{
+  const old=process.env.VOICE_RECORDING_ENABLED;process.env.VOICE_RECORDING_ENABLED="true";
+  try {
+    const {service,events}=recordingService({active:{sid:recordingSid,callSid,status:"paused",dateCreated:new Date(),channels:2},failUpdate:true});
+    await assert.rejects(service.controlRecording({callSid,action:"resume",recordingSid,consentConfirmed:true},"user_test"));
+    assert.ok(events.includes("update:stopped"));assert.ok(events.includes("release"));
+  } finally {if (old===undefined)delete process.env.VOICE_RECORDING_ENABLED;else process.env.VOICE_RECORDING_ENABLED=old;}
 });
 test("recording consent is stored before creation and leases prevent duplicate starts", async () => {
   const old=process.env.VOICE_RECORDING_ENABLED;process.env.VOICE_RECORDING_ENABLED="true";

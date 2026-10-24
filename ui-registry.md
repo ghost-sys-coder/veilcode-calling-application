@@ -2,6 +2,10 @@
 
 Use the existing shadcn components and shared warm editorial theme. Main surfaces use `--background`, panels `--card`, and dialogs `--popover`; text uses `--foreground` and supporting text `--muted-foreground`. Borders use `--border`, with the sidebar using `--sidebar-border`. Primary actions use `--primary` and destructive states `--destructive`.
 
+## After-call review and recording
+
+The after-call panel uses the official shadcn Card, NativeSelect, Label, Input, Textarea, Button and AlertDialog. Their registry entries were checked before composition. Keep the outcome and audio rating side by side above 480px, then stack them on smaller screens. The panel appears above the dialer after hang-up, with private recording playback beneath the form. Native audio remains the appropriate media control; playback speed uses NativeSelect. Unsaved drafts require confirmation before another call or reloading saved details. Recording controls replace the disabled keypad during a call; Start stays disabled until the telephone recipient answers and participant consent is confirmed.
+
 ## Callback reminders
 
 Email preferences compose the existing shadcn Checkbox, Label, and Button in the reminder sheet. Keep recipient and delivery timing explicit; the preference starts off. Loading, saved, failed, and unconfigured states use the existing muted hints and status/error announcements. Display provider acceptance separately from inbox delivery.

@@ -12,4 +12,6 @@ export interface ReviewInput { notes: string; rating: number | null; bookmarks: 
 export interface RecordingControlState {
   recordings: ReviewRecording[];
   active: ReviewRecording | null;
+  canRecord: boolean;
+  callStatus: string;
 }

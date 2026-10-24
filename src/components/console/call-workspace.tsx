@@ -3,8 +3,8 @@ import { Dialer } from "@/components/console/dialer";
 import type { CallerIdOption } from "@/lib/caller-id-types";
 import type { Contact } from "@/lib/contact-types";
 
-export function CallWorkspace({ configured, setupIssues, callerIds, recordingEnabled = false, initialContact, contactError }: {
-  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[]; recordingEnabled?:boolean;
+export function CallWorkspace({ configured, setupIssues, callerIds, recordingEnabled = false, reviewEnabled = false, initialContact, contactError }: {
+  configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[]; recordingEnabled?:boolean; reviewEnabled?:boolean;
   initialContact?:Pick<Contact,"id"|"name"|"phone"|"country">; contactError?:string;
 }) {
   return <div className="dialer-page">
@@ -26,7 +26,7 @@ export function CallWorkspace({ configured, setupIssues, callerIds, recordingEna
         <div className="dialer-aside-fact"><Zap size={18}/><span><strong>US, Canada, UK &amp; Australia</strong>Validated before calling</span></div>
         <span className="dialer-aside-foot">BUILT BY VEILCODE STUDIO <ArrowUpRight size={15}/></span>
       </aside>
-      <Dialer key={initialContact?.id ?? "manual"} configured={configured} setupIssues={setupIssues} callerIds={callerIds} recordingEnabled={recordingEnabled} initialContact={initialContact}/>
+      <Dialer key={initialContact?.id ?? "manual"} configured={configured} setupIssues={setupIssues} callerIds={callerIds} recordingEnabled={recordingEnabled} reviewEnabled={reviewEnabled} initialContact={initialContact}/>
     </div>
     <div className="shell dialer-footnote">Use the service only for lawful outreach. Recipient consent, telemarketing rules, and Twilio charges remain your responsibility.</div>
   </div>;

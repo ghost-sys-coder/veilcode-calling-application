@@ -51,9 +51,9 @@ export async function reconcileRecordings(callSid: string, userId: string) {
   return (await getReview(callSid,userId))!;
 }
 
-export async function saveProviderRecording(record: Pick<RecordingInstance,"sid"|"callSid"|"status"|"duration"|"channels"|"dateCreated">) {
+export async function saveProviderRecording(record: Pick<RecordingInstance,"sid"|"callSid"|"status"|"duration"|"channels"|"dateCreated">,controlConfirmed=false) {
   await storeRecording({ sid:record.sid,callSid:record.callSid,status:record.status,
-    duration:Math.max(0,Number(record.duration || 0)),channels:record.channels === 1 ? 1 : 2,createdAt:record.dateCreated });
+    duration:Math.max(0,Number(record.duration || 0)),channels:record.channels === 1 ? 1 : 2,createdAt:record.dateCreated,controlConfirmed });
 }
 
 export async function controlRecording(input: { callSid: string; action: string; recordingSid?: string; consentConfirmed?: boolean }, userId: string) {
@@ -66,9 +66,19 @@ export async function controlRecording(input: { callSid: string; action: string;
   const token = await acquireRecordingLease(input.callSid,userId,input.action === "start");
   if (!token) throw new ReviewError("A recording change is already in progress. Try again shortly.",409);
   let startedSid: string | undefined;
+  let changedSid: string | undefined;
   try {
     const recordings = await client.calls(input.callSid).recordings.list({ limit: 20 });
-    const active = recordings.find((item) => ["in-progress","paused"].includes(item.status));
+    // Twilio's read responses can collapse in-flight statuses to "processing".
+    // Keep using a confirmed control response only while that same recording is
+    // still present as processing and the telephone recipient remains connected.
+    const known = await getReview(input.callSid,userId);
+    const active = recordings.find((item) => ["in-progress","paused"].includes(item.status)) ??
+      known?.recordings.find((item) => !item.deletedAt && ["in-progress","paused"].includes(item.status) &&
+        recordings.some((provider) => provider.sid === item.sid && provider.status === "processing"));
+    if (input.action === "start" && recordings.some((item) => item.status === "processing")) {
+      throw new ReviewError("A recording is active or still processing. Refresh its status before starting another.",409);
+    }
     if (input.action === "start") {
       if (active) throw new ReviewError("This call already has an active recording. Refresh its status before continuing.",409);
       const recording = await client.calls(input.callSid).recordings.create({
@@ -77,20 +87,24 @@ export async function controlRecording(input: { callSid: string; action: string;
         recordingStatusCallbackMethod:"POST",recordingStatusCallbackEvent:["in-progress","completed","absent"],
       });
       startedSid = recording.sid;
-      await saveProviderRecording(recording);
+      await saveProviderRecording(recording,true);
     } else {
       if (!input.recordingSid || active?.sid !== input.recordingSid) throw new ReviewError("The active recording changed. Refresh and try again.",409);
       const stored = await getOwnedRecording(input.recordingSid,userId);
       if (!stored || stored.callSid !== input.callSid || stored.deletedAt) throw new ReviewError("Recording not found.",404);
       if (Date.parse(stored.expiresAt) <= Date.now()) throw new ReviewError("This recording has expired.",410);
       const status = input.action === "pause" ? "paused" : input.action === "resume" ? "in-progress" : "stopped";
+      changedSid = input.recordingSid;
       const recording = await client.calls(input.callSid).recordings(input.recordingSid).update({ status, ...(status === "paused" ? { pauseBehavior:"silence" } : {}) });
-      await saveProviderRecording(recording);
+      await saveProviderRecording(recording,true);
     }
   } catch (error) {
-    if (startedSid) {
-      // Do not leave an orphan recording running if its durable metadata could not be saved.
-      await client.calls(input.callSid).recordings(startedSid).update({ status:"stopped" }).catch(() => {});
+    const uncertainSid=startedSid ?? changedSid;
+    if (uncertainSid) {
+      // Fail closed if a provider response or its durable metadata is uncertain.
+      // This also prevents a failed resume from silently capturing conversation.
+      await client.calls(input.callSid).recordings(uncertainSid).update({ status:"stopped" })
+        .then(record=>saveProviderRecording(record,true)).catch(() => {});
     }
     throw error;
   } finally { await releaseRecordingLease(input.callSid,token); }

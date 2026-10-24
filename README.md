@@ -10,6 +10,8 @@ Private browser dialer for US, Canadian, UK, and Australian outbound calls with 
 
 Call history, consent-based recording controls, private playback/downloads, ratings, notes, bookmarks, and audio retention are implemented. See [call review setup and operation](docs/call-reviews.md) for database variables, migrations, deployment, and the first consented recording test.
 
+After hang-up, the dialer opens a review panel for the outcome, audio rating, callback time and conversation note, with recording playback beside the review workflow. One save updates the rating and follow-up atomically. This uses existing storage and recording configuration; no new environment variables or migration are required.
+
 Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, Clerk, Twilio Voice JavaScript SDK, shadcn/ui, Lucide, and Postgres for call reviews. Server components by default. Each first-party React component lives in a separate file. Ordinary calling remains available without review storage.
 
 The console uses a responsive shadcn sidebar and shared form/dialog components. See the [UI component and theme guide](docs/ui-components.md) before changing theme tokens or adding controls.

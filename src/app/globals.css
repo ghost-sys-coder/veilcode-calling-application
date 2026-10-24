@@ -571,6 +571,22 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .dialer-title-mark { display: flex; gap: 13px; align-items: center; font-size: 10px; letter-spacing: .07em; font-weight: 850; white-space: nowrap; color: #4d6052; padding-bottom: 9px; }
 .dialer-title-mark span { display: flex; align-items: center; gap: 10px; }
 .dialer-grid { display: grid; grid-template-columns: minmax(290px, .68fr) minmax(0, 1fr); gap: 20px; max-width: 1160px; }
+.dialer-column { display:flex; flex-direction:column; gap:24px; min-width:0; }
+.dialer-grid > .dialer-aside { align-self:start; }
+.call-wrapup { min-width:0; border-radius:.5rem; box-shadow:none; gap:20px; }
+.call-wrapup [data-slot="card-title"] { font-size:1.4rem; letter-spacing:-.04em; }
+.call-wrapup h2 { scroll-margin-top:7rem; }
+.call-wrapup [data-slot="card-description"] { line-height:1.65; overflow-wrap:anywhere; }
+.call-wrapup .wrapup-field-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; }
+.wrapup-field-row > div { display:grid; gap:.45rem; min-width:0; }
+.wrapup-links { display:flex; flex-wrap:wrap; gap:8px; }
+.wrapup-recordings { border-top:1px solid var(--border); margin-top:24px; }
+.wrapup-recordings .review-section-title { align-items:center; flex-wrap:wrap; }
+.recording-overview { border-top:1px solid var(--border); padding-top:18px; margin-top:22px; font-size:12px; }
+.recording-overview strong { color:var(--foreground); }
+.recording-overview p { color:var(--muted-foreground); line-height:1.7; margin:8px 0; }
+.recording-overview a { color:var(--primary); text-decoration:underline; text-underline-offset:3px; }
+@media (max-width:480px) { .call-wrapup .wrapup-field-row { grid-template-columns:minmax(0,1fr); } }
 .dialer-aside { position: relative; color: #f3f6ef; background: #1b2922; min-height: 590px; padding: 36px; display: flex; flex-direction: column; overflow: hidden; }
 .dialer-aside::before { content: ''; position: absolute; right: -95px; top: 105px; width: 265px; height: 265px; border: 1px solid #52665a; border-radius: 50%; box-shadow: 0 0 0 38px #1b2922, 0 0 0 39px #435448, 0 0 0 80px #1b2922, 0 0 0 81px #37493e; opacity: .42; pointer-events: none; }
 .dialer-aside-top { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 800; letter-spacing: .13em; color: #afc4b4; position: relative; }

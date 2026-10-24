@@ -1,4 +1,5 @@
 import "server-only";
+import type { Pool } from "pg";
 import { reviewDatabase } from "@/lib/review-db";
 import type { FollowUp, FollowUpInput, FollowUpItem, FollowUpView } from "@/lib/followup-types";
 const fields=`c.call_sid AS "callSid",COALESCE(f.outcome,'not_set') AS outcome,f.callback_at AS "callbackAt",
@@ -11,8 +12,8 @@ export async function getFollowUp(callSid:string,operatorId:string):Promise<Foll
     LEFT JOIN veilcall_call_followups f ON f.call_sid=c.call_sid WHERE c.call_sid=$1 AND c.operator_id=$2`,[callSid,operatorId]);
   return result.rows[0] ? serialize(result.rows[0]) : null;
 }
-export async function saveFollowUp(callSid:string,operatorId:string,input:FollowUpInput):Promise<boolean> {
-  const result=await reviewDatabase().query(`INSERT INTO veilcall_call_followups(call_sid,outcome,callback_at,note,completed_at)
+export async function saveFollowUp(callSid:string,operatorId:string,input:FollowUpInput,database:Pick<Pool,"query">=reviewDatabase()):Promise<boolean> {
+  const result=await database.query(`INSERT INTO veilcall_call_followups(call_sid,outcome,callback_at,note,completed_at)
     SELECT c.call_sid,$3,$4::timestamptz,$5,CASE WHEN $6 THEN now() ELSE NULL END FROM veilcall_calls c
     WHERE c.call_sid=$1 AND c.operator_id=$2
     ON CONFLICT(call_sid) DO UPDATE SET outcome=EXCLUDED.outcome,callback_at=EXCLUDED.callback_at,note=EXCLUDED.note,

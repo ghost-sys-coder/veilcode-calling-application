@@ -71,7 +71,7 @@ export async function releaseRecordingLease(callSid: string, token: string) {
 }
 
 export async function storeRecording(recording: {
-  sid: string; callSid: string; status: string; duration: number; channels: number; createdAt: Date;
+  sid: string; callSid: string; status: string; duration: number; channels: number; createdAt: Date; controlConfirmed?:boolean;
 }) {
   // Only an app call with a stored consent attestation can acquire recording metadata.
   await reviewDatabase().query(`INSERT INTO veilcall_recordings
@@ -82,11 +82,17 @@ export async function storeRecording(recording: {
         OR EXISTS (SELECT 1 FROM veilcall_recordings existing WHERE existing.recording_sid=$1 AND existing.call_sid=c.call_sid))
     ON CONFLICT (recording_sid) DO UPDATE SET
       status=CASE WHEN veilcall_recordings.status IN ('completed','absent') AND EXCLUDED.status NOT IN ('completed','absent')
+        THEN veilcall_recordings.status
+        WHEN NOT $8 AND ((EXCLUDED.status='in-progress' AND veilcall_recordings.status='paused')
+          OR (EXCLUDED.status IN ('in-progress','paused') AND veilcall_recordings.status='stopped'))
+        THEN veilcall_recordings.status
+        WHEN EXCLUDED.status='processing' AND veilcall_recordings.status IN ('in-progress','paused','stopped')
+          AND EXISTS (SELECT 1 FROM veilcall_calls c WHERE c.call_sid=EXCLUDED.call_sid AND c.status='in-progress')
         THEN veilcall_recordings.status ELSE EXCLUDED.status END,
       duration_seconds=GREATEST(veilcall_recordings.duration_seconds,EXCLUDED.duration_seconds),
       channels=EXCLUDED.channels,updated_at=now()
     WHERE veilcall_recordings.deleted_at IS NULL AND veilcall_recordings.call_sid=EXCLUDED.call_sid`,
-  [recording.sid,recording.callSid,recording.status,recording.duration,recording.channels,recording.createdAt,retentionDays()]);
+  [recording.sid,recording.callSid,recording.status,recording.duration,recording.channels,recording.createdAt,retentionDays(),recording.controlConfirmed === true]);
 }
 
 export async function getOwnedRecording(sid: string, operatorId: string): Promise<(ReviewRecording & { callSid: string }) | null> {

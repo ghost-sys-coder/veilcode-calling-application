@@ -11,14 +11,17 @@ During an answered call:
 1. Inform every participant that the call will be recorded for quality review, and obtain their agreement before proceeding. The app's checkbox records the operator's attestation; it does not play an announcement or independently verify consent.
 2. Confirm the consent checkbox and press **Start recording**. Recordings are off by default for every call. The backend also checks that the telephone recipient has answered.
 3. Use **Pause**, **Resume**, and **Stop** as needed. Paused portions are replaced with silence rather than conversation audio. Resuming requires the consent confirmation to remain selected. A recording ends automatically with the call.
-4. Open the call in history and refresh availability after Twilio finishes processing. Each start/stop segment can produce a separate recording.
-5. Play or seek the audio, adjust playback speed, add timestamped bookmarks, and optionally download an MP3. Save notes, a 1–5 rating, and bookmark descriptions with **Save review**. Switching calls prompts before discarding unsaved changes.
+4. After hang-up, the dialer shows **How did it go?** above the next-call controls. Choose the business outcome, an optional 1–5 audio rating, callback time if needed, and an outcome/callback note. **Save call review** saves the rating and follow-up together; existing quality notes and bookmarks remain intact. The saved outcome and callback also appear in Call history and Follow-ups. A newer edit in another tab requires reloading saved details before replacing it.
+5. Play or download audio in the after-call panel when Twilio finishes processing. It refreshes availability for about a minute, then supports manual refresh. Each start/stop segment can produce a separate recording. Recording is off by default for each new call, and unavailable for calls that were never recorded.
+6. Use **Open full review** for quality notes, timestamped bookmarks, and recording deletion. Save notes, the shared rating, and bookmark descriptions with **Save review**. Switching calls prompts before discarding unsaved changes.
 
 Recording/retention requirements depend on participant location and the use of their information. The app implements an explicit operator confirmation flow; it is not a determination of legal compliance. Twilio's guidance: https://help.twilio.com/articles/360011522553
 
 ## Storage and configuration
 
 Audio remains at Twilio. The application stores call metadata, consent attestations, notes, ratings, bookmarks, recording SIDs, and retention deadlines in Postgres. Clerk authentication and the existing operator allowlist apply to all history, control, review, media, and deletion endpoints. Operators can only access their own calls.
+
+Twilio can return `processing` for recording reads even while the call is active. The app preserves the last confirmed start/pause/stop response during that call, so polling does not hide the controls or undo a pause. A late start callback cannot replace a confirmed pause/stop. A confirmed resume can. Terminal provider states still win; new segments wait for previous processing to finish. An uncertain recording mutation makes a best-effort stop before reporting failure. See [Twilio recording status behavior](https://www.twilio.com/docs/voice/api/recording).
 
 The initial dedicated Neon project is `veilcall` (`raspy-glade-69911381`), with the `development` branch in `aws-eu-central-1`. Credentials were written to ignored `.env.local`; they are not committed. This branch is the local development backend. Use a separate branch/database for production if production isolation is required.
 
@@ -54,5 +57,7 @@ Playback and downloads reject expired or deleted recordings immediately. The dai
 ## Verification and remaining live check
 
 Automated tests cover operator access, consent, answered-call checks, duplicate recording prevention, pause/resume/stop, media ranges, deletion, callback signatures, review validation, and retention authorization. The real database check covers SQL ownership boundaries, consent gating, lease behavior, immutable expiry, tombstones, notes, terminal outcomes, and cursor pagination. Browser verification covers real history import and save/reload of notes and ratings.
+
+The after-call API additionally checks expected follow-up revision and rating before an atomic save. `WRAPUP_TEST_HOST=<isolated branch hostname> node scripts/check-call-wrapup-storage.mjs` verifies ownership, stale edits, rollback on a failed follow-up write, preservation of quality notes/bookmarks, and callback email versioning using rollback-only fixtures. This extension has automated and database verification; it still needs an interactive browser/consented-call check.
 
 Before relying on recordings operationally, make one agreed, consented test call. Start/pause/resume/stop the recording, verify both speakers in playback and a download, test deletion on that disposable test recording, and confirm the deployed retention job runs. No live calls were placed or participant audio recorded during implementation.

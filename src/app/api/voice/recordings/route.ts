@@ -10,9 +10,9 @@ export async function GET(request: Request) {
   const callSid = new URL(request.url).searchParams.get("callSid") ?? "";
   if (!callSidPattern.test(callSid)) return voiceJson({ error:"Invalid call reference." },400);
   try {
-    await ownedProviderCall(callSid,operator.userId);
+    const {child} = await ownedProviderCall(callSid,operator.userId);
     const review = await reconcileRecordings(callSid,operator.userId);
-    return voiceJson({ recordings:review.recordings,active:review.recordings.find((item) => !item.deletedAt && ["in-progress","paused"].includes(item.status)) ?? null });
+    return voiceJson({ recordings:review.recordings,active:review.recordings.find((item) => !item.deletedAt && ["in-progress","paused"].includes(item.status)) ?? null,canRecord:child?.status === "in-progress",callStatus:child?.status ?? "pending" });
   } catch (error) { return voiceJson({ error:error instanceof ReviewError ? error.message : "Recording status is unavailable." },error instanceof ReviewError ? error.status : 503); }
 }
 export async function POST(request: Request) {
@@ -28,6 +28,6 @@ export async function POST(request: Request) {
   }
   try {
     const review = await controlRecording({ callSid:input.callSid,action:input.action,recordingSid:input.recordingSid as string | undefined,consentConfirmed:input.consentConfirmed === true },operator.userId);
-    return voiceJson({ recordings:review.recordings,active:review.recordings.find((item) => !item.deletedAt && ["in-progress","paused"].includes(item.status)) ?? null });
+    return voiceJson({ recordings:review.recordings,active:review.recordings.find((item) => !item.deletedAt && ["in-progress","paused"].includes(item.status)) ?? null,canRecord:review.status === "in-progress",callStatus:review.status });
   } catch (error) { return voiceJson({ error:error instanceof ReviewError ? error.message : "The recording change could not be confirmed. Refresh its status before retrying." },error instanceof ReviewError ? error.status : 503); }
 }
