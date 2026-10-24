@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { CallWorkspace } from "@/components/console/call-workspace";
-import { Unauthorized } from "@/components/console/unauthorized";
 import { isApprovedOperator } from "@/lib/access";
 import { getVoiceConfigStatus } from "@/lib/voice-config";
 import { reviewStorageConfigured } from "@/lib/review-db";
@@ -11,6 +10,7 @@ import { contactIdPattern } from "@/lib/contact-validation";
 import { getReview } from "@/lib/review-store";
 import { callSidPattern } from "@/lib/review-validation";
 import { callingCountries, normalizeDialingNumber } from "@/lib/calling-countries";
+import { operatorCallerIds } from "@/lib/operator-caller-ids";
 
 export const metadata: Metadata = {
   title: "Private call console",
@@ -21,8 +21,11 @@ export const metadata: Metadata = {
 export default async function ConsolePage({ searchParams }: { searchParams:Promise<{contact?:string | string[];callback?:string | string[]}> }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in?redirect_url=%2Fconsole");
-  if (!isApprovedOperator(userId)) return <Unauthorized userId={userId} />;
+  if (!isApprovedOperator(userId)) redirect("/onboarding");
   const status = getVoiceConfigStatus();
+  try {status.callerIds=await operatorCallerIds(userId);}
+  catch {status.ready=false;status.callerIds=[];status.missing.push("Your calling numbers could not be loaded.");}
+  if (!status.callerIds.length) status.ready=false;
   const {contact:id,callback}=await searchParams;
   let initialContact;
   let contactError;

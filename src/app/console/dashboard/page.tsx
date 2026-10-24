@@ -9,6 +9,6 @@ export const metadata:Metadata={title:"Outreach dashboard",robots:{index:false,f
 export default async function DashboardPage() {
   const {userId}=await auth();
   if (!userId) redirect("/sign-in?redirect_url=%2Fconsole%2Fdashboard");
-  if (!isApprovedOperator(userId)) return <Unauthorized userId={userId}/>;
+  if (!isApprovedOperator(userId)) return <Unauthorized/>;
   return <DashboardWorkspace configured={reviewStorageConfigured()}/>;
 }

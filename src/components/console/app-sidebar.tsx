@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ShieldCheck, Phone } from "lucide-react";
 import { consoleDestinationActive, consoleDestinations } from "@/lib/console-navigation";
 import { useCompactNavigation } from "@/hooks/use-compact-navigation";
 import { BrandMark } from "@/components/landing/brand-mark";
@@ -38,6 +38,7 @@ export function AppSidebar() {
     </SidebarContent>
     <SidebarFooter>
       <SidebarMenu>
+        <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/numbers")} tooltip="Phone numbers"><Link href="/console/numbers" aria-current={pathname.startsWith("/console/numbers") ? "page" : undefined}><Phone aria-hidden="true"/><span>Phone numbers</span></Link></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton asChild tooltip="Visit website">
           <Link href="/"><ArrowUpRight aria-hidden="true"/><span>Visit website</span></Link>
         </SidebarMenuButton></SidebarMenuItem>

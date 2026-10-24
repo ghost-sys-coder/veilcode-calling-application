@@ -1,0 +1,98 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import pg from "pg";
+import { loadModule } from "../tests/support/load-typescript.mjs";
+createRequire(import.meta.url)("@next/env").loadEnvConfig(process.cwd());
+// An explicit isolated host is mandatory; never run fixtures on the production URL.
+const testHost=process.env.NUMBER_TEST_HOST;
+if(testHost!=="ep-noisy-waterfall-b9lcv5rb.c-7.eu-central-1.aws.neon.tech")throw new Error("Set NUMBER_TEST_HOST to the approved isolated validation branch.");
+const url=new URL(process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL);url.hostname=testHost;
+const client=new pg.Client({connectionString:url.toString(),connectionTimeoutMillis:20000});
+const database={query:(...args)=>client.query(...args),connect:async()=>({
+  query:(sql,...args)=>client.query(sql==="BEGIN"?"SAVEPOINT number_fixture":sql==="COMMIT"?"RELEASE SAVEPOINT number_fixture":sql==="ROLLBACK"?"ROLLBACK TO SAVEPOINT number_fixture":sql,...args),release:()=>{},
+})};
+const errors=loadModule("../src/lib/number-errors.ts");
+const store=loadModule("../src/lib/number-store.ts",{"server-only":{},"@/lib/review-db":{reviewDatabase:()=>database},"@/lib/number-errors":errors});
+const prefix=`test_number_${randomUUID()}`,a=prefix+"_a",b=prefix+"_b",c=prefix+"_c",admin=prefix+"_admin";
+const profile={businessName:"Number fixture",contactName:"Fixture",businessCountry:"UG",website:"",purpose:"Isolated rollback verification of number setup."};
+const phone="+256772123456",au="+61412345678",accountSid=`AC${"e".repeat(32)}`,providerSid=`PN${"d".repeat(32)}`,callSid=`CA${"c".repeat(32)}`;
+process.env.TWILIO_ACCOUNT_SID=accountSid;
+const existing={kind:"existing",label:"Fixture mobile",phone,numberCountry:"UG",details:"",ownershipConfirmed:true};
+const newNumber={kind:"new",label:"Fixture new number",phone:null,numberCountry:"AU",details:"",ownershipConfirmed:false};
+const review=(action,expectedRevision,extras={})=>({action,expectedRevision,note:"Fixture reviewed",phone:null,complianceConfirmed:true,...extras});
+try {
+  await client.connect();await client.query("BEGIN");
+  const migration=await readFile(new URL("../migrations/006_number_onboarding.sql",import.meta.url),"utf8");
+  await client.query(migration);await client.query(migration);
+  for(const user of [a,b,c])await store.saveBusinessProfile(user,profile);
+  const first=await store.createNumberRequest(a,existing);
+  assert.equal(await store.getNumberRequest(first,b),null);
+  assert.equal((await store.listNumberRequests(b)).length,0);
+  await assert.rejects(store.beginNumberVerification(first,a,accountSid),error=>error.status===409);
+  await store.saveBusinessProfile(a,{...profile,businessName:"Changed later"});
+  assert.equal((await store.getNumberRequest(first,a)).business.businessName,profile.businessName);
+  await store.reviewNumberRequest(first,admin,review("approve",1));
+  await assert.rejects(store.reviewNumberRequest(first,admin,review("reject",1)),error=>error.status===409);
+  const attempt=await store.beginNumberVerification(first,a,accountSid);
+  await assert.rejects(store.beginNumberVerification(first,a,accountSid),error=>error.status===409);
+  await store.attachNumberVerification(attempt.id,callSid,"123456");
+  assert.equal((await store.listNumberRequests(a))[0].verification.code,"123456");
+  assert.ok((await store.listNumberRequests(null)).every(item=>item.verification===null));
+  await store.completeNumberVerification(attempt,`CA${"a".repeat(32)}`,providerSid);
+  assert.equal((await store.getNumberRequest(first,a)).status,"verifying");
+  await store.completeNumberVerification(attempt,callSid,providerSid);
+  assert.equal((await store.getNumberRequest(first,a)).status,"verified");
+  assert.equal((await store.listCallerIdentities(a))[0].number,phone);
+  assert.equal((await store.listCallerIdentities(b)).length,0);
+  assert.equal((await store.listNumberRequests(a))[0].verification,null);
+  const verifiedRevision=(await store.getNumberRequest(first,a)).revision;
+  await store.completeNumberVerification(attempt,callSid,providerSid);
+  assert.equal((await store.getNumberRequest(first,a)).revision,verifiedRevision);
+  const claim=await store.createNumberRequest(b,existing);
+  await assert.rejects(store.reviewNumberRequest(claim,admin,review("approve",1)),error=>error.status===409);
+  assert.equal((await store.getNumberRequest(claim,b)).status,"pending");
+  const provision=await store.createNumberRequest(b,newNumber);
+  await store.reviewNumberRequest(provision,admin,review("approve",1));
+  await store.reviewNumberRequest(provision,admin,review("fulfill",2,{phone:au}),{sid:providerSid,accountSid});
+  assert.equal((await store.listCallerIdentities(b))[0].source,"provisioned");
+  assert.equal((await store.listCallerIdentities(a))[0].number,phone);
+  await store.reviewNumberRequest(provision,admin,review("revoke",3));
+  assert.equal((await store.listCallerIdentities(b))[0].status,"revoked");
+  const fast=await store.createNumberRequest(a,{...existing,phone:"+442079460123",numberCountry:"GB"});
+  await store.reviewNumberRequest(fast,admin,review("approve",1));
+  const fastAttempt=await store.beginNumberVerification(fast,a,accountSid);
+  await store.completeNumberVerification(fastAttempt,callSid,`PN${"f".repeat(32)}`);
+  await store.attachNumberVerification(fastAttempt.id,callSid,"654321");
+  assert.equal((await store.getVerificationAttempt(fastAttempt.id)).status,"success");
+  const last=await store.createNumberRequest(a,{...existing,phone:"+12125550123",numberCountry:"US"});
+  await store.reviewNumberRequest(last,admin,review("approve",1));
+  const expired=await store.beginNumberVerification(last,a,accountSid);
+  await client.query(`UPDATE veilcall_number_verifications SET expires_at=now()-interval '1 minute' WHERE id=$1`,[expired.id]);
+  await store.completeNumberVerification(expired,callSid,providerSid);
+  assert.equal((await store.getNumberRequest(last,a)).status,"verifying");
+  await assert.rejects(store.beginNumberVerification(last,a,accountSid),error=>error.status===429);
+  for(let i=0;i<3;i++)await store.createNumberRequest(c,newNumber);
+  await assert.rejects(store.createNumberRequest(c,newNumber),error=>error.status===429);
+  const audits=await client.query(`SELECT count(*)::int AS count FROM veilcall_number_audit WHERE request_id=$1`,[first]);
+  assert.ok(audits.rows[0].count>=4);
+  await store.reviewNumberRequest(first,admin,review("revoke",verifiedRevision));
+  assert.equal((await store.listCallerIdentities(a)).find(item=>item.number===phone).status,"revoked");
+  assert.equal((await store.getNumberRequest(first,a)).status,"revoked");
+  const d=prefix+"_d";await store.saveBusinessProfile(d,profile);
+  const capped=await store.createNumberRequest(d,{...existing,phone:"+442079460199",numberCountry:"GB"});
+  await store.reviewNumberRequest(capped,admin,review("approve",1));
+  for(let i=0;i<3;i++)await client.query(`INSERT INTO veilcall_number_verifications(id,request_id,operator_id,phone_number,account_sid,status)
+    VALUES($1,$2,$3,$4,$5,'failed')`,[randomUUID(),capped,prefix+"_historical_"+i,"+442079460199",accountSid]);
+  await assert.rejects(store.beginNumberVerification(capped,d,accountSid),error=>error.status===429);
+  const daily=(await client.query(`SELECT count(*)::int AS count FROM veilcall_number_verifications WHERE created_at>now()-interval '24 hours'`)).rows[0].count;
+  for(let i=daily;i<30;i++)await client.query(`INSERT INTO veilcall_number_verifications(id,request_id,operator_id,phone_number,account_sid,status)
+    VALUES($1,$2,$3,'+14165550123',$4,'failed')`,[randomUUID(),capped,prefix+"_global_"+i,accountSid]);
+  const global=await store.createNumberRequest(d,{...existing,phone:"+442079460198",numberCountry:"GB"});
+  await store.reviewNumberRequest(global,admin,review("approve",1));
+  await assert.rejects(store.beginNumberVerification(global,d,accountSid),error=>error.status===429);
+  assert.equal((await client.query(`SELECT count(*)::int AS count FROM veilcall_number_verifications WHERE operator_id=$1`,[d])).rows[0].count,0);
+  console.log("Number storage passed: idempotent migration, ownership and assignment isolation, immutable business snapshot, approval/revision checks, one active attempt, private codes, callback replay/expiry/race handling, bounded requests and attempts, revocation and audit. All fixtures and DDL roll back.");
+}catch(error){console.error(`Number storage check failed (${error.code || error.name}). ${error.name==="AssertionError" ? error.message : "No credentials logged."}`);process.exitCode=1;}
+finally{await client.query("ROLLBACK").catch(()=>{});await client.end();}

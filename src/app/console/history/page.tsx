@@ -11,7 +11,7 @@ export const metadata:Metadata = {title:"Call history",robots:{index:false,follo
 export default async function CallHistoryPage({searchParams}:{searchParams:Promise<{call?:string | string[]}>}) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in?redirect_url=%2Fconsole%2Fhistory");
-  if (!isApprovedOperator(userId)) return <Unauthorized userId={userId}/>;
+  if (!isApprovedOperator(userId)) return <Unauthorized/>;
   const {call}=await searchParams;
   let initialCall;
   let initialError;

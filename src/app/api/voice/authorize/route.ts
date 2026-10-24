@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { isApprovedOperator } from "@/lib/access";
 import { signCallTicket } from "@/lib/call-ticket";
 import { isApprovedCallerId } from "@/lib/caller-ids";
+import { operatorCallerIds } from "@/lib/operator-caller-ids";
 import { validateCallingDestination } from "@/lib/destination";
 import { getVoiceConfig } from "@/lib/voice-config";
 import { isSameOrigin, voiceJson } from "@/lib/voice-responses";
@@ -22,10 +23,11 @@ export async function POST(request: Request) {
   if (!destination) return voiceJson({ error: "Enter a valid US, Canadian, UK, or Australian number in international format." }, 400);
   try {
     const config = getVoiceConfig();
+    const callerIds = await operatorCallerIds(userId);
     const requestedCallerId = (body as { from?: unknown } | null)?.from;
-    // Older clients without a selection retain the server's primary caller ID.
-    const callerId = requestedCallerId === undefined ? config.fromNumber : requestedCallerId;
-    if (!isApprovedCallerId(callerId, config.callerIds)) {
+    // Older clients default to the first number assigned to this operator.
+    const callerId = requestedCallerId === undefined ? callerIds[0]?.number : requestedCallerId;
+    if (!isApprovedCallerId(callerId, callerIds)) {
       return voiceJson({ error: "Select an approved calling number." }, 403);
     }
     return voiceJson({

@@ -9,6 +9,6 @@ export const metadata:Metadata={title:"Follow-ups",robots:{index:false,follow:fa
 export default async function FollowUpsPage() {
   const {userId}=await auth();
   if (!userId) redirect("/sign-in?redirect_url=%2Fconsole%2Ffollowups");
-  if (!isApprovedOperator(userId)) return <Unauthorized userId={userId}/>;
+  if (!isApprovedOperator(userId)) return <Unauthorized/>;
   return <FollowUpsWorkspace configured={reviewStorageConfigured()}/>;
 }

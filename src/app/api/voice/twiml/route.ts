@@ -4,6 +4,8 @@ import { isApprovedCallerId } from "@/lib/caller-ids";
 import { validateCallingDestination } from "@/lib/destination";
 import { getVoiceConfig } from "@/lib/voice-config";
 import { trackCall } from "@/lib/review-call-tracking";
+import { operatorCallerIds } from "@/lib/operator-caller-ids";
+import { isApprovedOperator } from "@/lib/access";
 
 export const runtime = "nodejs";
 
@@ -33,10 +35,13 @@ export async function POST(request: Request) {
     params.AccountSid !== config.accountSid ||
     params.From !== `client:${ticket.sub}` ||
     !validateCallingDestination(ticket.to) ||
-    !isApprovedCallerId(ticket.from, config.callerIds)
+    !isApprovedOperator(ticket.sub)
   ) {
     return new Response("Call permission expired or invalid", { status: 403 });
   }
+  try {
+    if (!isApprovedCallerId(ticket.from,await operatorCallerIds(ticket.sub))) return new Response("Calling number unavailable",{status:403});
+  } catch {return new Response("Calling number unavailable",{status:503});}
   const response = new twilio.twiml.VoiceResponse();
   const tracked = await trackCall(params.CallSid ?? "",ticket.sub,ticket.to,ticket.from);
   const dial = response.dial({ callerId: ticket.from, answerOnBridge: true, timeout: 30 });

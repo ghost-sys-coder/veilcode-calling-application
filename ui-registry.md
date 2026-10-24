@@ -2,6 +2,10 @@
 
 Use the existing shadcn components and shared warm editorial theme. Main surfaces use `--background`, panels `--card`, and dialogs `--popover`; text uses `--foreground` and supporting text `--muted-foreground`. Borders use `--border`, with the sidebar using `--sidebar-border`. Primary actions use `--primary` and destructive states `--destructive`.
 
+## Business and number onboarding
+
+Use the existing shadcn Card, Input, Select, Textarea, Checkbox, Label, Alert, Button, Dialog and AlertDialog; the Card, Select and AlertDialog registry documentation was checked before composition. Business and number-choice cards form two columns above 900px and stack below it. Panels have 12px corners, theme borders, no shadow and 18–24px content insets. Inputs and actions have at least 44px height. Status pills pair a text label with muted, primary or destructive theme colors. Verification codes use tabular numerals on a secondary surface; they are displayed for entry on the phone, not collected by a web OTP field. Verification and review dialogs remain opaque and scroll within the viewport. Keep the phone icon in the header at a 44px target, with the existing five mobile destinations retained.
+
 ## After-call review and recording
 
 The after-call panel uses the official shadcn Card, Select, Label, Input, Textarea, Button and AlertDialog. Their registry entries were checked before composition. Keep the outcome and audio rating side by side above 480px, then stack them on smaller screens. The panel appears above the dialer after hang-up, with private recording playback beneath the form. Native audio remains the appropriate media control; playback speed uses Select. Unsaved drafts require confirmation before another call or reloading saved details. Recording controls replace the disabled keypad during a call; Start stays disabled until the telephone recipient answers and participant consent is confirmed.

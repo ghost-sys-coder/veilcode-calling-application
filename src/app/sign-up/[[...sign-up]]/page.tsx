@@ -6,6 +6,6 @@ export const metadata: Metadata = { title: "Create account", robots: { index: fa
 
 export default function SignUpPage() {
   return <AuthShell heading="Start with identity." eyebrow="VEILCALL ACCESS">
-    <SignUp path="/sign-up" routing="path" fallbackRedirectUrl="/console" signInUrl="/sign-in" />
+    <SignUp path="/sign-up" routing="path" fallbackRedirectUrl="/onboarding" signInUrl="/sign-in" />
   </AuthShell>;
 }

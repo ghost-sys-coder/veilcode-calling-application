@@ -2,6 +2,8 @@
 
 Use shadcn/ui whenever an appropriate component exists. This preference is recorded in the project `AGENTS.md` and the user's global Codex instructions.
 
+Number onboarding composes the existing shadcn Card, Input, Textarea, Select, Checkbox, Label, Alert, Button, Dialog and AlertDialog. Phone numbers is available in the sidebar footer and workspace header; mobile navigation retains five destinations. See [number onboarding](number-onboarding.md) for behavior and setup.
+
 The protected console uses the shadcn sidebar on desktop, with icon collapse, active navigation, and a persistent collapse preference. Phones and tablets use a fixed bottom bar composed from shadcn NavigationMenu, with all five destinations and the shared callback count. Tablet navigation floats in a centered dock. The shared console layout leaves the existing Clerk session and operator checks in place.
 
 Console controls use shadcn Button, Input, Select, Textarea, Checkbox, Label, and AlertDialog. The original selectors were official shadcn NativeSelect controls; active console selectors now use the styled Radix Select for consistent opaque menus, keyboard navigation and selected-item indicators. Keep app behavior outside `components/ui`. Native audio controls remain appropriate for recording playback.

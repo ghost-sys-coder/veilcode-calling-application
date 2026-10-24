@@ -1,5 +1,7 @@
 # VeilCall
 
+[Business and number onboarding](docs/number-onboarding.md) supports existing-number ownership verification, assisted new-number requests, an owner review queue and caller IDs assigned to individual operators. New accounts can complete setup while calling access remains separately approved. Migration `006_number_onboarding.sql` and the two owner configuration variables are required for this release.
+
 Stripe's server-only client now selects `STRIPE_PROD_API_KEY` for Vercel Production deployments and `STRIPE_TEST_API_KEY` for local/Preview environments. No checkout or charges are enabled yet. See [billing configuration and payment proposal](docs/billing.md) for environment rules, proposed USD pricing, calling costs, and the steps needed for paid onboarding.
 
 Callback reminders are available throughout the workspace: due notices, a Follow-ups badge, persistent dismissal, snooze, reschedule, completion, and dialer shortcuts. See [callback reminders](docs/callback-reminders.md) for behavior, migration, and validation details.

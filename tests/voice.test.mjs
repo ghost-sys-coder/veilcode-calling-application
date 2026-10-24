@@ -269,12 +269,13 @@ const voiceConfig = {
   fromNumber: primaryCaller, callerIds: approvedCallers, signingSecret,
 };
 
-function authorizeRoute({ userId = "user_operator", approved = true } = {}) {
+function authorizeRoute({ userId = "user_operator", approved = true, callers = approvedCallers } = {}) {
   const route = loadModule("../src/app/api/voice/authorize/route.ts", {
     "@clerk/nextjs/server": { auth: async () => ({ userId }) },
     "@/lib/access": { isApprovedOperator: () => approved },
     "@/lib/call-ticket": ticketModule,
     "@/lib/caller-ids": callerIdsModule,
+    "@/lib/operator-caller-ids": {operatorCallerIds:async()=>callers},
     "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
     "@/lib/voice-config": { getVoiceConfig: () => voiceConfig },
     "@/lib/voice-responses": {
@@ -312,10 +313,18 @@ test("multi-number authorization retains session, operator and origin checks", a
   assert.equal((await authorizeRoute()(body, "https://other.test")).status, 403);
 });
 
-function webhookRoute(config = voiceConfig) {
+test("call authorization refuses globally configured caller IDs outside the operator's assignment",async()=>{
+  const response=await authorizeRoute({callers:[{number:secondaryCaller,label:"Owned"}]} )({to:"+442079460123",from:primaryCaller});
+  assert.equal(response.status,403);
+  assert.equal((await authorizeRoute({callers:[]})({to:"+442079460123"})).status,403);
+});
+
+function webhookRoute(config = voiceConfig, approved = true) {
   const route = loadModule("../src/app/api/voice/twiml/route.ts", {
     "@/lib/call-ticket": ticketModule,
     "@/lib/caller-ids": callerIdsModule,
+    "@/lib/operator-caller-ids": {operatorCallerIds:async()=>config.callerIds},
+    "@/lib/access": {isApprovedOperator:()=>approved},
     "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
     "@/lib/voice-config": { getVoiceConfig: () => config },
     "@/lib/review-call-tracking": { trackCall:async () => false },
@@ -352,4 +361,5 @@ test("TwiML retains Twilio signature, account and operator identity validation",
   assert.equal((await webhookRoute()(ticket, {}, false)).status, 403);
   assert.equal((await webhookRoute()(ticket, { AccountSid: `AC${"d".repeat(32)}` })).status, 403);
   assert.equal((await webhookRoute()(ticket, { From: "client:user_other" })).status, 403);
+  assert.equal((await webhookRoute(voiceConfig,false)(ticket)).status,403);
 });

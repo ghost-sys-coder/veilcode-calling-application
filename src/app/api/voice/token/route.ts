@@ -3,6 +3,7 @@ import twilio from "twilio";
 import { isApprovedOperator } from "@/lib/access";
 import { getVoiceConfig } from "@/lib/voice-config";
 import { voiceJson } from "@/lib/voice-responses";
+import { operatorCallerIds } from "@/lib/operator-caller-ids";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,7 @@ export async function GET() {
 
   try {
     const config = getVoiceConfig();
+    if (!(await operatorCallerIds(userId)).length) return voiceJson({error:"Set up an approved calling number first."},403);
     const token = new twilio.jwt.AccessToken(config.accountSid, config.apiKeySid, config.apiKeySecret, {
       identity: userId,
       ttl: 600,

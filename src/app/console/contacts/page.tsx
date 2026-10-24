@@ -9,6 +9,6 @@ export const metadata:Metadata={title:"Contacts",robots:{index:false,follow:fals
 export default async function ContactsPage() {
   const {userId}=await auth();
   if (!userId) redirect("/sign-in?redirect_url=%2Fconsole%2Fcontacts");
-  if (!isApprovedOperator(userId)) return <Unauthorized userId={userId}/>;
+  if (!isApprovedOperator(userId)) return <Unauthorized/>;
   return <ContactsWorkspace configured={reviewStorageConfigured()}/>;
 }
