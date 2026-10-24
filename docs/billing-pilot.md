@@ -134,14 +134,30 @@ development Clerk settings, owner IDs, test catalog and webhook configuration.
 Real calling, recordings and callback emails are disabled there. Sensitive values
 travel over stdin, and subprocess output is suppressed. This transfer requires
 the owner's explicit approval after automatic approval review rejected it.
-Production variables are not changed by that script.
+Production variables are not changed by that script. The owner approved this
+scoped setup on 25 October 2026, and the branch-specific settings are configured.
+
+The protected preview is available at
+`https://veilcall-git-billing-pilot-ghostsyscoders-projects.vercel.app/console/billing`.
+Its webhook uses a private project automation secret only for Vercel's protection
+layer; Clerk still protects user APIs and Stripe signatures protect payment events.
 
 Validation includes unit/API tests, real Postgres storage tests on the isolated
 validation branch inside an outer rollback, and local headless component checks
 at 320/390/768/1024/1440px. Storage tests use mocked Stripe objects and never make
 payments, calls or email deliveries. Test catalog provisioning makes actual test
-Stripe API calls; a completed hosted Checkout and external webhook delivery still
-need to be verified after the preview configuration is approved.
+Stripe API calls. Hosted subscription and $10 top-up Checkout transactions were
+completed with Stripe's documented test card in the protected preview. Actual
+signed Stripe events activated the subscription and credited the wallet. A
+60-second simulation debited seven test cents, leaving $9.93 and no held credit.
+The browser-loaded Customer Portal showed the test subscription and test card.
+
+Replayed paid webhooks returned HTTP 204 without adding credit again; a validly
+signed event marked as live mode returned HTTP 403. Vercel request logs confirmed
+HTTP 204 on the tested webhook deliveries. Unsigned webhooks and anonymous billing
+and administrator requests were rejected. The preview's real-call token endpoint
+returned HTTP 503 without a token. The verification sessions were signed out.
+Production environment metadata and the production deployment were unchanged.
 
 Before a live launch, approve final pricing, exact route economics, number rental,
 credit/refund terms and tax treatment. Stripe Tax is not automatically enabled;
