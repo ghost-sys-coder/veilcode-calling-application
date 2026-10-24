@@ -40,11 +40,14 @@ jobs:
           if (!value) throw new Error('GitHub identity was missing.');
           console.log(`::add-mask::${value}`);
           const response = await fetch(process.env.DISPATCH_URL, {
-            headers: { Authorization: `Bearer ${value}` },
+            headers: { 'X-VeilCall-Scheduler-Token': value },
             redirect: 'error',
             signal: AbortSignal.timeout(65000),
           });
-          if (!response.ok) throw new Error(`Callback email dispatch failed (HTTP ${response.status}).`);
+          if (!response.ok) {
+            console.log(JSON.stringify({ status: response.status, contentType: response.headers.get('content-type'), clerkReason: response.headers.get('x-clerk-auth-reason') }));
+            throw new Error(`Callback email dispatch failed (HTTP ${response.status}).`);
+          }
           const result = await response.json();
           console.log(JSON.stringify({ accepted: result.accepted, retry: result.retry, failed: result.failed, skipped: result.skipped }));
           if (result.failed > 0) throw new Error('One or more callback emails need attention.');

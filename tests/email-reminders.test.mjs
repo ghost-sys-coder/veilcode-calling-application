@@ -42,6 +42,7 @@ test("scheduler identity is bound to this repository, workflow, branch, event an
     for(const value of ["","Bearer undefined","Bearer malformed","Bearer "+"a".repeat(20001)])assert.equal(await auth.emailDispatchAuthorized(req(value)),false);
     assert.equal(verifications,0);assert.equal(await auth.emailDispatchAuthorized(req("Bearer cron_secret")),true);assert.equal(verifications,0);
     assert.equal(await auth.emailDispatchAuthorized(req("Bearer a.b.c")),true);
+    assert.equal(await auth.emailDispatchAuthorized(new Request("https://app.test/dispatch",{headers:{"X-VeilCall-Scheduler-Token":"a.b.c"}})),true);
     for(const key of Object.keys(valid)){payload={...valid,[key]:"wrong"};assert.equal(await auth.emailDispatchAuthorized(req("Bearer a.b.c")),false,key);}
     payload={...valid,event_name:"workflow_dispatch"};assert.equal(await auth.emailDispatchAuthorized(req("Bearer a.b.c")),true);
     payload={...valid,event_name:"push"};assert.equal(await auth.emailDispatchAuthorized(req("Bearer a.b.c")),true);

@@ -12,7 +12,7 @@ The Vercel team uses Hobby, so the existing daily recording-retention cron is un
 
 The workflow uses no checkout, third-party action, API key, cron secret, or repository secret. Its only job permission is `id-token: write`. The app verifies the short-lived GitHub JWT's RS256 signature, issuer, audience, age/expiry, stable repository/owner IDs, repository name, `master` ref, exact workflow path, subject, and schedule/manual/push event. It also runs when the workflow file itself changes on `master`, providing an initial access check. Forks, other workflows, pull requests, and other branches are rejected. The existing `CRON_SECRET` also permits a trusted operator to run the dispatcher manually. Authentication is checked before database access.
 
-The workflow supports **Run workflow** in GitHub Actions for a manual check. Each response logs aggregate counts only. A successful empty run confirms dispatch access, not email inbox delivery. Permanent email failures make the workflow fail so they appear in Actions. Temporary failures stay queued for later runs.
+GitHub identity is sent in `X-VeilCall-Scheduler-Token`, keeping it separate from Clerk's session Authorization header. The workflow supports **Run workflow** in GitHub Actions for a manual check. Each response logs aggregate counts only. A successful empty run confirms dispatch access, not email inbox delivery. Permanent email failures make the workflow fail so they appear in Actions. Temporary failures stay queued for later runs.
 
 ## Configuration
 
