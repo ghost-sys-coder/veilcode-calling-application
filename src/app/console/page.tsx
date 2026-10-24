@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { CallWorkspace } from "@/components/console/call-workspace";
-import { isApprovedOperator } from "@/lib/access";
+import { operatorHasAccess as isApprovedOperator } from "@/lib/access";
 import { getVoiceConfigStatus } from "@/lib/voice-config";
 import { reviewStorageConfigured } from "@/lib/review-db";
 import { getContact } from "@/lib/contact-store";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export default async function ConsolePage({ searchParams }: { searchParams:Promise<{contact?:string | string[];callback?:string | string[]}> }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in?redirect_url=%2Fconsole");
-  if (!isApprovedOperator(userId)) redirect("/onboarding");
+  if (!(await isApprovedOperator(userId))) redirect("/onboarding");
   const status = getVoiceConfigStatus();
   try {status.callerIds=await operatorCallerIds(userId);}
   catch {status.ready=false;status.callerIds=[];status.missing.push("Your calling numbers could not be loaded.");}

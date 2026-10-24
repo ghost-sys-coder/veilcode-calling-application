@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BusinessProfileForm } from "@/components/console/business-profile-form";
 import { NumberRequestForm } from "@/components/console/number-request-form";
 import { NumberRequestCard } from "@/components/console/number-request-card";
+import { AccessRequest } from "@/components/console/access-request";
 import type { NumberSetupSummary } from "@/lib/number-types";
 
 export function NumberOnboarding() {
@@ -41,7 +42,7 @@ export function NumberOnboarding() {
     {loading && <p className="number-loading" role="status">Loading your number setup…</p>}
     {error && <Alert variant="destructive"><AlertTitle>Number setup unavailable</AlertTitle><AlertDescription>{error}<Button variant="outline" type="button" onClick={refresh}><RefreshCw aria-hidden="true"/>Try again</Button></AlertDescription></Alert>}
     {summary && <>
-      {!summary.operatorApproved && <Alert className="number-access-notice"><ShieldCheck aria-hidden="true"/><AlertTitle>Calling access is under review</AlertTitle><AlertDescription>You can submit your details and follow your number request here. Business approval, number verification and calling access are reviewed separately.</AlertDescription></Alert>}
+      {!summary.operatorApproved && <AccessRequest profileReady={!!summary.profile}/>}
       <div className="number-setup-grid">
         <Card><CardHeader><span className="number-step">01 / BUSINESS DETAILS</span><CardTitle>Introduce your business</CardTitle><CardDescription>Tell us who will use the number and what you’ll be calling about.</CardDescription></CardHeader>
           <CardContent><BusinessProfileForm key={JSON.stringify(summary.profile)} profile={summary.profile} busy={busy} onSave={input=>save("/api/onboarding/profile","PUT",input,"Business details saved.")}/></CardContent></Card>

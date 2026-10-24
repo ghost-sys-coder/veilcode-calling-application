@@ -85,7 +85,7 @@ test("Voice tokens are denied before JWT creation when an approved operator has 
   class AccessToken {constructor(){created=true;}}
   const handlers=loadModule("../src/app/api/voice/token/route.ts",{
     "@clerk/nextjs/server":{auth:async()=>({userId:"user_customer"})},twilio:{jwt:{AccessToken}},
-    "@/lib/access":{isApprovedOperator:()=>true},"@/lib/operator-caller-ids":{operatorCallerIds:async()=>[]},
+    "@/lib/access":{operatorHasAccess:()=>true},"@/lib/billing-call-access":{requireRealCallingAccess:()=>{}},"@/lib/billing-config":{BillingError:class extends Error{}},"@/lib/operator-caller-ids":{operatorCallerIds:async()=>[]},
     "@/lib/voice-config":{getVoiceConfig:()=>({})},"@/lib/voice-responses":{voiceJson:json},
   });
   assert.equal((await handlers.GET()).status,403);assert.equal(created,false);

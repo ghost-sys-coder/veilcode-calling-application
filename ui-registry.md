@@ -35,3 +35,14 @@ Use the official shadcn Card for metrics and panels, Select for the activity per
 ## Outcomes and follow-ups
 
 Compose shadcn Label, Select, Input (`datetime-local`), Textarea, and Button. Forms use 1rem field spacing and .45rem label/control spacing. Supporting text is .76rem with 1.5 line height. Review subsections use a 1px theme border and 1.25rem vertical padding. Tables reuse Contacts person/number/note/action styles. Dialog surfaces remain opaque, scroll within the viewport, and use shadcn AlertDialog for discarding changes.
+
+## Billing and customer access
+
+Compose shadcn Card pairs above 900px and stack below. Use Instrument Serif for
+large prices/balances, muted uppercase overlines and tabular numbers for money.
+Activity uses the existing Table with right-aligned currency; smaller screens
+scroll the table within its card. Use opaque Dialog and Select surfaces, labeled
+inputs and explicit consent before a quote simulation. Actions have 44px minimum
+height; exclude Checkbox buttons from this rule and let their label provide the
+larger hit target. Owner decisions use Dialog, Select and a revision-bound note.
+Keep the five-item mobile dock; add account destinations to header/footer links.

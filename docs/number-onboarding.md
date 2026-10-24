@@ -30,8 +30,9 @@ open the dialer are redirected there.
   table records submission, verification results and administrator actions.
 
 Neither a new Clerk account, setup approval nor phone verification grants paid
-calling access. `CLERK_ALLOWED_USER_IDS` remains the server calling gate. Billing,
-calling credit and subscriptions remain inactive. Current records are owned by
+calling access. `CLERK_ALLOWED_USER_IDS` remains the real-calling pilot gate. The
+[customer access and billing sandbox](billing-pilot.md) adds a separate owner
+decision for workspace access and test-only payments. Current records are owned by
 an individual operator; shared agency workspaces and Twilio subaccounts are a
 later integration rather than a feature of this release.
 
@@ -54,7 +55,8 @@ TWILIO_CALLER_ID_OWNER_USER_ID=
 ```
 
 Set both to the existing owner's Clerk ID in this single-operator installation.
-Keep `CLERK_ALLOWED_USER_IDS` unchanged until separately approving a customer.
+Keep `CLERK_ALLOWED_USER_IDS` unchanged for customer onboarding; use the Customer
+access queue for workspace approval. Real paid calling remains a later release.
 Set the explicit caller-ID owner before adding a second approved operator.
 For backward compatibility, an installation with exactly one approved operator
 and no explicit owner still assigns its configured caller IDs to that operator.

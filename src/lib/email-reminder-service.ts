@@ -1,5 +1,5 @@
 import "server-only";
-import { isApprovedOperator } from "@/lib/access";
+import { operatorHasAccess as isApprovedOperator, approvedOperatorIds } from "@/lib/access";
 import { emailReminderConfig } from "@/lib/email-reminder-config";
 import { verifiedOperatorEmail } from "@/lib/email-recipient";
 import { reminderEmail } from "@/lib/email-reminder-message";
@@ -8,13 +8,13 @@ import { MailError, sendReminderEmail } from "@/lib/resend-mail";
 
 export async function dispatchCallbackEmails() {
   const config=emailReminderConfig();if(!config)throw new Error("Email delivery is not configured.");
-  const operators=(process.env.CLERK_ALLOWED_USER_IDS || "").split(",").map(value=>value.trim()).filter(Boolean);
+  const operators=await approvedOperatorIds();
   const summary={accepted:0,retry:0,failed:0,skipped:0};
   const start=Date.now();
   for(let index=0;index<10 && Date.now()-start<35000;index++) {
     const job=await claimEmailJob(operators);if(!job)break;
     try {
-      if(!isApprovedOperator(job.operatorId)){summary.skipped++;continue;}
+      if(!(await isApprovedOperator(job.operatorId))){summary.skipped++;continue;}
       const recipient=await verifiedOperatorEmail(job.operatorId);
       if(!recipient || (job.payload && job.payload.to[0]!==recipient)) {
         await finishEmailJob(job,{errorCode:"recipient_unavailable",retryable:false});summary.failed++;continue;

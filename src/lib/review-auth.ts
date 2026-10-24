@@ -1,12 +1,12 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
-import { isApprovedOperator } from "@/lib/access";
+import { operatorHasAccess as isApprovedOperator } from "@/lib/access";
 import { isSameOrigin, voiceJson } from "@/lib/voice-responses";
 
 export async function reviewOperator(request?: Request): Promise<{ userId: string } | Response> {
   const { userId } = await auth();
   if (!userId) return voiceJson({ error: "Sign in to continue." }, 401);
-  if (!isApprovedOperator(userId)) return voiceJson({ error: "Operator access is required." }, 403);
+  if (!(await isApprovedOperator(userId))) return voiceJson({ error: "Operator access is required." }, 403);
   if (request && !isSameOrigin(request)) return voiceJson({ error: "Invalid origin." }, 403);
   return { userId };
 }

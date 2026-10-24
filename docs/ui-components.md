@@ -20,6 +20,12 @@ Callback reminders use shadcn Sheet, Alert, SidebarMenuBadge, and Dialog. Notifi
 
 ## Theme contract
 
+Billing and Customer access reuse Card, Table, Button, Alert, Dialog, Input,
+Textarea, Label, Checkbox and Select from the existing shadcn components. Registry
+Card and Table sources were checked before composing these screens. Billing is
+available through the desktop footer and compact header; the mobile dock keeps
+five destinations. Quotes and review decisions use labeled opaque dialogs.
+
 `src/app/globals.css` defines the complete shadcn color tokens and exposes them through Tailwind's inline theme. Clerk's shadcn theme reads these same variables, including `--card`, `--card-foreground`, `--muted`, and `--foreground`. Missing surface tokens caused the transparent Clerk popups.
 
 Keep `--background`, `--card`, `--popover`, and `--sidebar` opaque. Use `--brand-accent` for the orange VeilCall accent and `--ink-muted` for editorial secondary text. The standard shadcn `--accent` and `--muted` tokens represent subtle backgrounds.

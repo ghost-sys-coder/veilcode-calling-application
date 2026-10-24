@@ -2,7 +2,7 @@
 
 [Business and number onboarding](docs/number-onboarding.md) supports existing-number ownership verification, assisted new-number requests, an owner review queue and caller IDs assigned to individual operators. New accounts can complete setup while calling access remains separately approved. Migration `006_number_onboarding.sql` and the two owner configuration variables are required for this release.
 
-Stripe's server-only client now selects `STRIPE_PROD_API_KEY` for Vercel Production deployments and `STRIPE_TEST_API_KEY` for local/Preview environments. No checkout or charges are enabled yet. See [billing configuration and payment proposal](docs/billing.md) for environment rules, proposed USD pricing, calling costs, and the steps needed for paid onboarding.
+The [customer access and billing sandbox](docs/billing-pilot.md) adds owner-reviewed workspace approval, shadcn billing screens, test subscriptions/top-ups, signed payment webhooks and a calling-credit simulator. Live payments and paid customer calling remain disabled. The server selects `STRIPE_PROD_API_KEY` for Vercel Production and `STRIPE_TEST_API_KEY` for local/Preview; commercial pricing remains a [proposal](docs/billing.md).
 
 Callback reminders are available throughout the workspace: due notices, a Follow-ups badge, persistent dismissal, snooze, reschedule, completion, and dialer shortcuts. See [callback reminders](docs/callback-reminders.md) for behavior, migration, and validation details.
 
@@ -81,7 +81,7 @@ Use Node 22 or later. Visit `http://localhost:3000`.
 5. Add that ID to `.env.local` as `CLERK_ALLOWED_USER_IDS=user_...` and restart the development server. More IDs can be comma separated.
 6. Return to `/console`; this should show the workspace. The phone controls are disabled until Twilio is configured and explicitly enabled.
 
-**Security:** Clerk registration alone **does not grant calling access**. The allowlist is checked independently on the server for both `/console` and token/authorization endpoints. Do not implement this allowlist only in the UI.
+**Security:** Clerk registration alone **does not grant workspace or calling access**. New customers request owner approval through onboarding; approved workspace access is checked on the server. Real calling remains limited to configured pilot operators until live billing is implemented. Number approval and payment never implicitly grant an administrator role.
 
 ## 3. Configure Twilio
 

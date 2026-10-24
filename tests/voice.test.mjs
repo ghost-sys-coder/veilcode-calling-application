@@ -89,7 +89,7 @@ function statusRoute({ userId = "user_operator", approved = true, from = "client
   const route = loadModule("../src/app/api/voice/status/route.ts", {
     "@clerk/nextjs/server": { auth: async () => ({ userId }) },
     twilio: () => ({ calls }),
-    "@/lib/access": { isApprovedOperator: () => approved },
+    "@/lib/access": { operatorHasAccess: () => approved },
     "@/lib/voice-config": { getVoiceConfig: () => ({ accountSid: "test", authToken: "test" }) },
     "@/lib/voice-outcome": outcomeModule,
     "@/lib/voice-responses": { voiceJson: (data, status = 200) => Response.json(data, { status }) },
@@ -272,9 +272,10 @@ const voiceConfig = {
 function authorizeRoute({ userId = "user_operator", approved = true, callers = approvedCallers } = {}) {
   const route = loadModule("../src/app/api/voice/authorize/route.ts", {
     "@clerk/nextjs/server": { auth: async () => ({ userId }) },
-    "@/lib/access": { isApprovedOperator: () => approved },
+    "@/lib/access": { operatorHasAccess: () => approved },
     "@/lib/call-ticket": ticketModule,
     "@/lib/caller-ids": callerIdsModule,
+    "@/lib/billing-call-access": {requireRealCallingAccess:()=>{}}, "@/lib/billing-config": {BillingError:class extends Error{}},
     "@/lib/operator-caller-ids": {operatorCallerIds:async()=>callers},
     "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
     "@/lib/voice-config": { getVoiceConfig: () => voiceConfig },
@@ -323,8 +324,9 @@ function webhookRoute(config = voiceConfig, approved = true) {
   const route = loadModule("../src/app/api/voice/twiml/route.ts", {
     "@/lib/call-ticket": ticketModule,
     "@/lib/caller-ids": callerIdsModule,
+    "@/lib/billing-call-access": {requireRealCallingAccess:()=>{}}, "@/lib/billing-config": {BillingError:class extends Error{}},
     "@/lib/operator-caller-ids": {operatorCallerIds:async()=>config.callerIds},
-    "@/lib/access": {isApprovedOperator:()=>approved},
+    "@/lib/access": {operatorHasAccess:()=>approved},
     "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
     "@/lib/voice-config": { getVoiceConfig: () => config },
     "@/lib/review-call-tracking": { trackCall:async () => false },
