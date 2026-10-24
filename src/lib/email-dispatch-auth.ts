@@ -17,7 +17,9 @@ export async function emailDispatchAuthorized(request:Request):Promise<boolean> 
   try {
     const {payload}=await jwtVerify(token,keys,{issuer,audience:emailDispatchAudience,algorithms:["RS256"],maxTokenAge:"10m",clockTolerance:5,requiredClaims:["exp","iat","repository_id","repository_owner_id","repository","workflow_ref","ref","event_name","sub"]});
     const checks={repositoryId:payload.repository_id==="1414889716",ownerId:payload.repository_owner_id==="84653892",repository:payload.repository===repository,
-      ref:payload.ref==="refs/heads/master",subject:payload.sub===`repo:${repository}:ref:refs/heads/master`,
+      // GitHub supports customized subject templates. The exact signed repo,
+      // owner, ref, workflow and event claims below bind the caller identity.
+      ref:payload.ref==="refs/heads/master",subject:typeof payload.sub==="string" && payload.sub.length>0,
       workflow:payload.workflow_ref===`${repository}/.github/workflows/callback-email-reminders.yml@refs/heads/master`,
       event:payload.event_name==="schedule" || payload.event_name==="workflow_dispatch" || payload.event_name==="push"};
     const rejected=Object.entries(checks).filter(([,valid])=>!valid).map(([field])=>field);

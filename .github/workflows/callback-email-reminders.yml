@@ -23,6 +23,7 @@ jobs:
       id-token: write
     steps:
       # No checkout or third-party action runs with the identity token.
+      # The app pins the signed repo, owner, branch and workflow claims.
       - name: Process due callback emails
         env:
           DISPATCH_URL: https://call.veilcode.studio/api/voice/reminders/email/dispatch
