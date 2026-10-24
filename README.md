@@ -1,5 +1,7 @@
 # VeilCall
 
+Stripe's server-only client now selects `STRIPE_PROD_API_KEY` for Vercel Production deployments and `STRIPE_TEST_API_KEY` for local/Preview environments. No checkout or charges are enabled yet. See [billing configuration and payment proposal](docs/billing.md) for environment rules, proposed USD pricing, calling costs, and the steps needed for paid onboarding.
+
 Callback reminders are available throughout the workspace: due notices, a Follow-ups badge, persistent dismissal, snooze, reschedule, completion, and dialer shortcuts. See [callback reminders](docs/callback-reminders.md) for behavior, migration, and validation details.
 
 Operators can also opt into [email reminders](docs/callback-email-reminders.md) through Reminders. Resend delivers to verified account emails; GitHub Actions is configured to check due callbacks about every five minutes while the app is closed. Confirm a successful **schedule** event in Actions before relying on automatic delivery; a successful push or manual check only verifies that invocation.
