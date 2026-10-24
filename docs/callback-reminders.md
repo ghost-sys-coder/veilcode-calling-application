@@ -9,7 +9,7 @@ Schedule a callback from a call's **Outcome & follow-up** section. Reminders are
 - **Open dialer** prefills the saved number. The operator must start the call; opening it does not complete the callback.
 - Reminders refresh every minute while visible, on focus/return, and after follow-up actions. Other tabs receive a storage event containing a random change marker and no contact or call details.
 
-Alerts are in-app only: the app checks when it is open or when you return. This feature does not schedule email, SMS, browser push, or automatic calls while the app is closed. No new environment variables or notification provider are required.
+In-app alerts check while the app is open or when you return. Optional [email callback reminders](callback-email-reminders.md) also work while the app is closed after an operator opts in. SMS, browser push, and automatic calls are not scheduled. In-app reminders still require no email-provider variables.
 
 ## Storage and access
 
@@ -17,7 +17,7 @@ Run `npm run db:migrate` before deploying. Migration `004_callback_reminders.sql
 
 `GET /api/voice/reminders?timezone=Africa%2FKampala` returns one owner-scoped snapshot with counts and a bounded list. `POST /api/voice/reminders/[callSid]` requires an approved authenticated operator, same origin, and the revision shown in the UI. It performs an atomic ownership/version/open-state check. Stale, completed, or unavailable callbacks return 409 without changes. Invalid dates/actions return 400. Unexpected failures return sanitized 503 responses; the UI removes stale actions and requests a refresh before retrying.
 
-The existing Clerk, `DATABASE_URL`, and direct migration connection remain in use. There is no cron or background worker.
+The existing Clerk, `DATABASE_URL`, and direct migration connection remain in use. The in-app reminder flow does not need a cron or background worker; optional email reminders use a separate dispatcher.
 
 ## Verification
 

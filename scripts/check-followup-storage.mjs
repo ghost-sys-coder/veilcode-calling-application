@@ -16,6 +16,7 @@ try {
   await client.connect();await client.query("BEGIN");
   await client.query(await readFile(new URL("../migrations/003_call_followups.sql",import.meta.url),"utf8"));
   await client.query(await readFile(new URL("../migrations/004_callback_reminders.sql",import.meta.url),"utf8"));
+  await client.query(await readFile(new URL("../migrations/005_callback_email.sql",import.meta.url),"utf8"));
   await client.query("INSERT INTO veilcall_calls(call_sid,operator_id,to_number,country,notes,rating,status) VALUES($1,$3,'+442079460123','GB','Quality notes',5,'completed'),($2,$4,'+442079460123','GB','',NULL,'failed')",[callSid,otherCall,user,`${user}_other`]);
   assert.equal((await store.getFollowUp(callSid,user)).outcome,"not_set");
   assert.equal(await store.getFollowUp(callSid,`${user}_other`),null);

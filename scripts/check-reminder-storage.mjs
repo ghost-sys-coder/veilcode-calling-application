@@ -21,6 +21,7 @@ try {
   await client.connect();await client.query("BEGIN");
   const migration=await readFile(new URL("../migrations/004_callback_reminders.sql",import.meta.url),"utf8");
   await client.query(migration);await client.query(migration);
+  await client.query(await readFile(new URL("../migrations/005_callback_email.sql",import.meta.url),"utf8"));
   await client.query("INSERT INTO veilcall_calls(call_sid,operator_id,to_number,country,notes,rating) VALUES($1,$3,'+442079460123','GB','Quality note',5),($2,$4,'+442079460123','GB','',NULL)",[callSid,other,owner,foreign]);
   await followups.saveFollowUp(callSid,owner,input);await followups.saveFollowUp(other,foreign,input);
   assert.equal((await store.getReminders(owner,"Africa/Kampala")).pendingCount,1);

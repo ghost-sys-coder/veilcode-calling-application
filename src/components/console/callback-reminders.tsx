@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { localDateTime, localToUtc } from "@/lib/followup-validation";
 import { followUpsChanged, notifyFollowUpsChanged } from "@/lib/reminder-events";
 import type { CallbackReminder, ReminderAction, ReminderSummary } from "@/lib/reminder-types";
+import { EmailReminderSettings } from "@/components/console/email-reminder-settings";
 
 const ReminderContext=createContext<{data:ReminderSummary | null;error:string;refresh:()=>void;busy:boolean;open:boolean;setOpen:(value:boolean)=>void;act:(item:CallbackReminder,input:ReminderAction)=>Promise<boolean>} | null>(null);
 function useReminders() {const context=useContext(ReminderContext);if (!context) throw new Error("Reminder provider is missing.");return context;}
@@ -78,7 +79,7 @@ export function CallbackReminders() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild><Button variant="ghost" size="sm" className="reminder-trigger" aria-label={`Callback reminders${pending ? `, ${pending} due` : error ? ", unavailable" : ""}`}><Bell aria-hidden="true"/><span className="reminder-trigger-label">Reminders</span>{pending>0 && <span className="reminder-count">{pending>99 ? "99+" : pending}</span>}{error && <span aria-hidden="true">!</span>}</Button></SheetTrigger>
       <SheetContent className="reminder-sheet w-full sm:max-w-lg" onOpenAutoFocus={()=>setMessage("")}>
-        <SheetHeader><SheetTitle>Callback reminders</SheetTitle><SheetDescription>Today and anything overdue. Alerts appear while VeilCall is open or when you return.</SheetDescription></SheetHeader>
+        <SheetHeader><SheetTitle>Callback reminders</SheetTitle><SheetDescription>Today and anything overdue. Review callbacks here, or enable email reminders below.</SheetDescription></SheetHeader>
         <div className="reminder-body">
           <div className="reminder-toolbar"><p>{data ? `${data.attentionCount} open · ${pending} new due` : error ? "Reminders unavailable" : "Loading reminders…"}</p><Button variant="ghost" size="sm" disabled={busy} onClick={refresh}>Refresh</Button></div>
           {error && <Alert variant="destructive"><AlertTitle>Check your reminders</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
@@ -100,6 +101,7 @@ export function CallbackReminders() {
           {data && data.attentionCount>data.items.length && <p className="reminder-hint">Showing {data.items.length} of {data.attentionCount}. New due alerts appear first. View all follow-ups for the full queue.</p>}
           <p className="reminder-hint">Times use {data?.timezone || "your browser’s timezone"}. Snoozing changes the callback time. Dismissing an alert keeps the callback open. Opening the dialer requires you to start the call.</p>
           <Button asChild variant="outline"><Link href="/console/followups" onClick={()=>setOpen(false)}>View all follow-ups</Link></Button>
+          <EmailReminderSettings />
         </div>
       </SheetContent>
     </Sheet>

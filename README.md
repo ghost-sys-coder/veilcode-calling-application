@@ -2,6 +2,8 @@
 
 Callback reminders are available throughout the workspace: due notices, a Follow-ups badge, persistent dismissal, snooze, reschedule, completion, and dialer shortcuts. See [callback reminders](docs/callback-reminders.md) for behavior, migration, and validation details.
 
+Operators can also opt into [email reminders](docs/callback-email-reminders.md) through Reminders. Resend delivers to verified account emails; GitHub Actions checks due callbacks about every five minutes while the app is closed.
+
 Private browser dialer for US, Canadian, UK, and Australian outbound calls with Clerk authentication and Twilio Programmable Voice. The original custom landing page is retained. Authenticated console and calling code are implemented. Live account records confirm a completed UK call; US attempts were rejected by Twilio with error 13225.
 
 ## Stack and structure

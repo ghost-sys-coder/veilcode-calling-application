@@ -4,6 +4,8 @@ Use the existing shadcn components and shared warm editorial theme. Main surface
 
 ## Callback reminders
 
+Email preferences compose the existing shadcn Checkbox, Label, and Button in the reminder sheet. Keep recipient and delivery timing explicit; the preference starts off. Loading, saved, failed, and unconfigured states use the existing muted hints and status/error announcements. Display provider acceptance separately from inbox delivery.
+
 Use shadcn Sheet for the global reminder inbox, SidebarMenuBadge for the count, Alert for passive in-app notices, and Dialog, Label, Input (`datetime-local`), and Button for rescheduling. Surfaces use opaque theme backgrounds and subtle borders. The sheet scrolls within the viewport and fills the width on small screens. Actions wrap; long notes wrap and scroll. Alerts announce politely without opening a modal, taking focus, or playing audio. Keep due labels explicit alongside color. Counts include today and overdue; the bell's new-alert count excludes database-persisted dismissals.
 
 ## CSV import

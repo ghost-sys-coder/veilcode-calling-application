@@ -18,6 +18,10 @@ export async function saveFollowUp(callSid:string,operatorId:string,input:Follow
     ON CONFLICT(call_sid) DO UPDATE SET outcome=EXCLUDED.outcome,callback_at=EXCLUDED.callback_at,note=EXCLUDED.note,
       completed_at=CASE WHEN $6 THEN COALESCE(veilcall_call_followups.completed_at,EXCLUDED.completed_at) ELSE NULL END,
       revision=veilcall_call_followups.revision+1,
+      email_schedule_version=CASE WHEN veilcall_call_followups.outcome IS DISTINCT FROM EXCLUDED.outcome
+        OR veilcall_call_followups.callback_at IS DISTINCT FROM EXCLUDED.callback_at
+        OR (veilcall_call_followups.completed_at IS NOT NULL)<>$6
+        THEN veilcall_call_followups.email_schedule_version+1 ELSE veilcall_call_followups.email_schedule_version END,
       reminder_ack_revision=CASE WHEN veilcall_call_followups.outcome=EXCLUDED.outcome
         AND veilcall_call_followups.callback_at IS NOT DISTINCT FROM EXCLUDED.callback_at
         AND (veilcall_call_followups.completed_at IS NOT NULL)=$6

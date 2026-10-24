@@ -32,8 +32,8 @@ export async function getReminders(operatorId:string,timezone:string):Promise<Re
 // to the operator. A stale notification cannot overwrite a newer callback.
 export async function actOnReminder(callSid:string,operatorId:string,input:ReminderAction):Promise<boolean> {
   const assignment=input.action==="acknowledge" ? "reminder_ack_revision=f.revision" : input.action==="complete"
-    ? "completed_at=clock_timestamp(),revision=f.revision+1,updated_at=clock_timestamp()"
-    : "callback_at=CASE WHEN $4='snooze' THEN clock_timestamp()+($5::int * interval '1 minute') ELSE $6::timestamptz END,revision=f.revision+1,updated_at=clock_timestamp()";
+    ? "completed_at=clock_timestamp(),revision=f.revision+1,email_schedule_version=f.email_schedule_version+1,updated_at=clock_timestamp()"
+    : "callback_at=CASE WHEN $4='snooze' THEN clock_timestamp()+($5::int * interval '1 minute') ELSE $6::timestamptz END,revision=f.revision+1,email_schedule_version=f.email_schedule_version+1,updated_at=clock_timestamp()";
   const params:unknown[]=[callSid,operatorId,input.revision];
   if (input.action==="snooze" || input.action==="reschedule") params.push(input.action,input.action==="snooze" ? input.minutes : null,input.action==="reschedule" ? input.callbackAt : null);
   const result=await reviewDatabase().query(`UPDATE veilcall_call_followups f SET ${assignment}

@@ -1,0 +1,22 @@
+import "server-only";
+import { timingSafeEqual } from "node:crypto";
+import { createRemoteJWKSet, jwtVerify } from "jose";
+const issuer="https://token.actions.githubusercontent.com";
+const keys=createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks`),{timeoutDuration:5000});
+const repository="ghost-sys-coder/veilcode-calling-application";
+export const emailDispatchAudience="https://call.veilcode.studio/callback-email-dispatch";
+
+export async function emailDispatchAuthorized(request:Request):Promise<boolean> {
+  const authorization=request.headers.get("authorization") || "";
+  const secret=process.env.CRON_SECRET;
+  if(secret){const expected=Buffer.from(`Bearer ${secret}`),actual=Buffer.from(authorization);if(actual.length===expected.length && timingSafeEqual(expected,actual))return true;}
+  const token=authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  if(token.length>20000 || token.split(".").length!==3)return false;
+  try {
+    const {payload}=await jwtVerify(token,keys,{issuer,audience:emailDispatchAudience,algorithms:["RS256"],maxTokenAge:"10m",clockTolerance:5,requiredClaims:["exp","iat","repository_id","repository_owner_id","repository","workflow_ref","ref","event_name","sub"]});
+    return payload.repository_id==="1414889716" && payload.repository_owner_id==="84653892" && payload.repository===repository
+      && payload.ref==="refs/heads/master" && payload.sub===`repo:${repository}:ref:refs/heads/master`
+      && payload.workflow_ref===`${repository}/.github/workflows/callback-email-reminders.yml@refs/heads/master`
+      && (payload.event_name==="schedule" || payload.event_name==="workflow_dispatch" || payload.event_name==="push");
+  } catch{return false;}
+}
