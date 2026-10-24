@@ -8,5 +8,5 @@ export default async function ConsoleLayout({ children }: { children:React.React
   // Pages retain their existing redirect and unauthorized states.
   if (!userId || !isApprovedOperator(userId)) return children;
   const defaultOpen = (await cookies()).get("sidebar_state")?.value !== "false";
-  return <ConsoleShell defaultOpen={defaultOpen}>{children}</ConsoleShell>;
+  return <ConsoleShell key={userId} defaultOpen={defaultOpen}>{children}</ConsoleShell>;
 }

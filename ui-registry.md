@@ -2,6 +2,10 @@
 
 Use the existing shadcn components and shared warm editorial theme. Main surfaces use `--background`, panels `--card`, and dialogs `--popover`; text uses `--foreground` and supporting text `--muted-foreground`. Borders use `--border`, with the sidebar using `--sidebar-border`. Primary actions use `--primary` and destructive states `--destructive`.
 
+## Callback reminders
+
+Use shadcn Sheet for the global reminder inbox, SidebarMenuBadge for the count, Alert for passive in-app notices, and Dialog, Label, Input (`datetime-local`), and Button for rescheduling. Surfaces use opaque theme backgrounds and subtle borders. The sheet scrolls within the viewport and fills the width on small screens. Actions wrap; long notes wrap and scroll. Alerts announce politely without opening a modal, taking focus, or playing audio. Keep due labels explicit alongside color. Counts include today and overdue; the bell's new-alert count excludes database-persisted dismissals.
+
 ## CSV import
 
 Compose the existing shadcn Dialog, AlertDialog, Input file field, NativeSelect, Label, Table, and Button. Use a scrolling opaque dialog, 1rem field gaps, .75rem muted hints, and the existing contact person/number patterns. Mapping selects use a different source-column index for each field, with labels above controls. The preview table scrolls within the dialog and paginates 50 records at a time. Use the destructive token for invalid rows and the primary token for ready/imported rows. Results use text labels as well as color.

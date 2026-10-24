@@ -1,5 +1,7 @@
 # VeilCall
 
+Callback reminders are available throughout the workspace: due notices, a Follow-ups badge, persistent dismissal, snooze, reschedule, completion, and dialer shortcuts. See [callback reminders](docs/callback-reminders.md) for behavior, migration, and validation details.
+
 Private browser dialer for US, Canadian, UK, and Australian outbound calls with Clerk authentication and Twilio Programmable Voice. The original custom landing page is retained. Authenticated console and calling code are implemented. Live account records confirm a completed UK call; US attempts were rejected by Twilio with error 13225.
 
 ## Stack and structure

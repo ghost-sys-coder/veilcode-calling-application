@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { callOutcomes, type FollowUp, type CallOutcome } from "@/lib/followup-types";
 import { localDateTime, localToUtc, validateFollowUp } from "@/lib/followup-validation";
+import { notifyFollowUpsChanged } from "@/lib/reminder-events";
 
 export function FollowUpEditor({callSid,initial,onDirtyChange,onBusyChange,onSaved}:{
   callSid:string;initial?:FollowUp;onDirtyChange?:(dirty:boolean)=>void;onBusyChange?:(busy:boolean)=>void;onSaved?:()=>void;
@@ -49,7 +50,7 @@ export function FollowUpEditor({callSid,initial,onDirtyChange,onBusyChange,onSav
     try {
       const response=await fetch(`/api/voice/followups/${callSid}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(input)});
       const data=await response.json();if (!response.ok) throw new Error(data.error || "Outcome was not saved.");
-      setDirty(false);onDirtyChange?.(false);setMessage("Outcome and follow-up saved.");onSaved?.();
+      setDirty(false);onDirtyChange?.(false);setMessage("Outcome and follow-up saved.");notifyFollowUpsChanged();onSaved?.();
     } catch(issue) {setError(issue instanceof Error ? issue.message : "Outcome was not saved.");}
     finally {setBusy(false);}
   }}>

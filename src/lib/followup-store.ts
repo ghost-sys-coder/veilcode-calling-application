@@ -16,7 +16,13 @@ export async function saveFollowUp(callSid:string,operatorId:string,input:Follow
     SELECT c.call_sid,$3,$4::timestamptz,$5,CASE WHEN $6 THEN now() ELSE NULL END FROM veilcall_calls c
     WHERE c.call_sid=$1 AND c.operator_id=$2
     ON CONFLICT(call_sid) DO UPDATE SET outcome=EXCLUDED.outcome,callback_at=EXCLUDED.callback_at,note=EXCLUDED.note,
-      completed_at=CASE WHEN $6 THEN COALESCE(veilcall_call_followups.completed_at,EXCLUDED.completed_at) ELSE NULL END,updated_at=now()`,
+      completed_at=CASE WHEN $6 THEN COALESCE(veilcall_call_followups.completed_at,EXCLUDED.completed_at) ELSE NULL END,
+      revision=veilcall_call_followups.revision+1,
+      reminder_ack_revision=CASE WHEN veilcall_call_followups.outcome=EXCLUDED.outcome
+        AND veilcall_call_followups.callback_at IS NOT DISTINCT FROM EXCLUDED.callback_at
+        AND (veilcall_call_followups.completed_at IS NOT NULL)=$6
+        AND veilcall_call_followups.reminder_ack_revision=veilcall_call_followups.revision
+        THEN veilcall_call_followups.revision+1 ELSE NULL END,updated_at=now()`,
     [callSid,operatorId,input.outcome,input.callbackAt,input.note,input.completed]);
   return result.rowCount===1;
 }

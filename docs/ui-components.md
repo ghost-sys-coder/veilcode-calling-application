@@ -6,6 +6,8 @@ The protected console uses the shadcn sidebar, with desktop icon collapse, a mob
 
 Console controls use shadcn Button, Input, NativeSelect, Textarea, Checkbox, Label, and AlertDialog. Keep app behavior outside `components/ui`. Native audio controls remain appropriate for recording playback.
 
+Callback reminders use shadcn Sheet, Alert, SidebarMenuBadge, and Dialog. Notifications stay passive until the operator opens the sheet, with quick actions and a separate reschedule form. See [callback reminders](callback-reminders.md).
+
 ## Theme contract
 
 `src/app/globals.css` defines the complete shadcn color tokens and exposes them through Tailwind's inline theme. Clerk's shadcn theme reads these same variables, including `--card`, `--card-foreground`, `--muted`, and `--foreground`. Missing surface tokens caused the transparent Clerk popups.

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FollowUpEditor } from "@/components/console/followup-editor";
 import type { FollowUpItem, FollowUpPage, FollowUpView } from "@/lib/followup-types";
+import { followUpsChanged } from "@/lib/reminder-events";
 
 export function FollowUpsWorkspace({configured}:{configured:boolean}) {
   const [items,setItems]=useState<FollowUpItem[]>([]);
@@ -25,6 +26,12 @@ export function FollowUpsWorkspace({configured}:{configured:boolean}) {
   const [discard,setDiscard]=useState(false);
   const [now,setNow]=useState(()=>Date.now());
   useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),60000);return ()=>clearInterval(timer);},[]);
+  useEffect(()=>{
+    const refresh=()=>setRevision((value)=>value+1);
+    const otherTab=(event:StorageEvent)=>{if(event.key===followUpsChanged)refresh();};
+    window.addEventListener(followUpsChanged,refresh);window.addEventListener("storage",otherTab);
+    return ()=>{window.removeEventListener(followUpsChanged,refresh);window.removeEventListener("storage",otherTab);};
+  },[]);
   useEffect(()=>{
     if (!configured) return;
     const controller=new AbortController();

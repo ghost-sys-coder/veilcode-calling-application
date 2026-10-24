@@ -9,6 +9,7 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { dashboardRanges, type DashboardRange, type OutreachDashboard } from "@/lib/dashboard-types";
+import { followUpsChanged } from "@/lib/reminder-events";
 
 export function DashboardWorkspace({configured}:{configured:boolean}) {
   const [range,setRange]=useState<DashboardRange>("today");
@@ -34,7 +35,9 @@ export function DashboardWorkspace({configured}:{configured:boolean}) {
     if (!configured) return;
     const refresh=()=>{if(document.visibilityState==="visible")setRevision((value)=>value+1);};
     const timer=setInterval(refresh,60000);window.addEventListener("focus",refresh);
-    return ()=>{clearInterval(timer);window.removeEventListener("focus",refresh);};
+    const otherTab=(event:StorageEvent)=>{if(event.key===followUpsChanged)refresh();};
+    window.addEventListener(followUpsChanged,refresh);window.addEventListener("storage",otherTab);
+    return ()=>{clearInterval(timer);window.removeEventListener("focus",refresh);window.removeEventListener(followUpsChanged,refresh);window.removeEventListener("storage",otherTab);};
   },[configured]);
   function reload(){setLoading(true);setError("");setRevision((value)=>value+1);}
   const count=(value:number)=>value.toLocaleString();

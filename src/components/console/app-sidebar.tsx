@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, CalendarClock, History, LayoutDashboard, Phone, ShieldCheck, Users } from "lucide-react";
 import { BrandMark } from "@/components/landing/brand-mark";
+import { CallbackSidebarCount } from "@/components/console/callback-reminders";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar,
@@ -33,6 +34,7 @@ export function AppSidebar() {
                   <Icon aria-hidden="true"/><span>{label}</span>
                 </Link>
               </SidebarMenuButton>
+              {href==="/console/followups" && <CallbackSidebarCount />}
             </SidebarMenuItem>)}
           </SidebarMenu>
         </nav>
