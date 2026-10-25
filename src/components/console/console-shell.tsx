@@ -18,7 +18,7 @@ export function ConsoleShell({ children, defaultOpen = true, admin=false }: { ch
     <SidebarInset className="workspace-main">
       <header className="workspace-header">
         <div className="workspace-header-title"><div className="workspace-sidebar-toggle"><SidebarTrigger /><Separator orientation="vertical" className="h-4"/></div>
-          <span>{pathname.startsWith("/console/billing") ? "Billing" : pathname.startsWith("/console/customers") ? "Customer access" : pathname.startsWith("/console/numbers") ? "Phone numbers" : pathname === "/console/dashboard" ? "Dashboard" : pathname === "/console/history" ? "Call history" : pathname === "/console/contacts" ? "Contacts" : pathname === "/console/followups" ? "Follow-ups" : "Dialer"}</span>
+          <span>{pathname.startsWith("/console/costs") ? "Call costs" : pathname.startsWith("/console/billing") ? "Billing" : pathname.startsWith("/console/customers") ? "Customer access" : pathname.startsWith("/console/numbers") ? "Phone numbers" : pathname === "/console/dashboard" ? "Dashboard" : pathname === "/console/history" ? "Call history" : pathname === "/console/contacts" ? "Contacts" : pathname === "/console/followups" ? "Follow-ups" : "Dialer"}</span>
         </div>
         <div className="workspace-account"><Button asChild variant="ghost" size="icon" className="workspace-numbers-link"><Link href="/console/billing" aria-label="Billing and credit" title="Billing and credit"><CreditCard aria-hidden="true"/></Link></Button><Button asChild variant="ghost" size="icon" className="workspace-numbers-link"><Link href="/console/numbers" aria-label="Your phone numbers" title="Your phone numbers"><Phone aria-hidden="true"/></Link></Button><CallbackReminders /><UserButton /></div>
       </header>

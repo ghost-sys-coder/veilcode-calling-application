@@ -1,7 +1,10 @@
 import { verifiedVoiceWebhook } from "@/lib/voice-webhook";
 import { reviewDatabase } from "@/lib/review-db";
 import { callSidPattern } from "@/lib/review-validation";
+import { after } from "next/server";
+import { captureCallCost } from "@/lib/call-cost-service";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export async function POST(request: Request) {
   try {
     const params = await verifiedVoiceWebhook(request,"/api/voice/calls/callback");
@@ -13,6 +16,10 @@ export async function POST(request: Request) {
     await reviewDatabase().query(`UPDATE veilcall_calls SET status=$2,duration_seconds=GREATEST(duration_seconds,$3),updated_at=now()
       WHERE call_sid=$1 AND (status NOT IN ('completed','busy','failed','no-answer','canceled')
         OR $2 IN ('completed','busy','failed','no-answer','canceled'))`,[params.ParentCallSid,status,duration]);
+    if (["completed","busy","failed","no-answer","canceled"].includes(status)) after(async()=>{
+      try { await captureCallCost(params.ParentCallSid); }
+      catch { console.error("Call cost capture is temporarily unavailable."); }
+    });
     return new Response(null,{status:204});
   } catch { return new Response("Call status storage unavailable",{status:503}); }
 }

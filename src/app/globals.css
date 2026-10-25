@@ -1063,3 +1063,28 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .billing-simulation-dialog { max-height:calc(100dvh - 40px); overflow-y:auto; }
 @media (max-width:900px) { .billing-overview,.billing-customer-grid { grid-template-columns:minmax(0,1fr); } }
 @media (max-width:480px) { .billing-overview { gap:16px; }.billing-actions > button { flex:1 1 auto; }.billing-transactions { padding-inline:12px; }.billing-toolbar p { max-width:180px; }.billing-page .number-section-heading { align-items:flex-start; gap:8px; flex-direction:column; }.billing-simulation-dialog { width:calc(100% - 24px); } }
+
+/* Owner cost reporting uses the console's shadcn surfaces and palette. */
+.cost-toolbar,.cost-actions { display:flex; align-items:end; flex-wrap:wrap; gap:12px; }
+.cost-toolbar { justify-content:space-between; margin-block:24px 12px; }
+.cost-toolbar label { display:block; margin-bottom:8px; }
+.cost-toolbar [role="combobox"] { min-width:210px; }
+.cost-overview { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; margin-block:24px; }
+.cost-overview [data-slot="card"],.cost-ledger { min-width:0; box-shadow:none; }
+.cost-overview [data-slot="card-title"] { font-family:var(--font-instrument-serif),serif; font-weight:400; font-size:36px; line-height:1.2; overflow-wrap:anywhere; }
+.cost-overview [data-slot="card-description"] { font-size:10px; letter-spacing:.1em; }
+.cost-overview p,.cost-footnote { font-size:12px; line-height:1.7; }
+.cost-overview p+p { margin-top:10px; }
+.cost-muted,.cost-footnote,.cost-call span,.cost-call time { color:var(--muted-foreground); }
+.cost-amount { display:block; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.cost-amount small { font-family:var(--font-geist-sans),sans-serif; font-size:10px; color:var(--muted-foreground); }
+.cost-overview .cost-amount { white-space:normal; }
+.cost-pending,.cost-checked { display:block; font-size:10px; color:var(--muted-foreground); margin-top:6px; max-width:140px; white-space:normal; line-height:1.5; }
+.cost-call { display:grid; gap:6px; min-width:180px; white-space:normal; }
+.cost-call span,.cost-call time { font-size:11px; }
+.cost-call a { justify-content:flex-start; padding:0; width:fit-content; }
+.cost-state { display:inline-block; font-size:11px; border:1px solid var(--border); padding:5px 9px; border-radius:6px; white-space:nowrap; background:var(--muted); }
+.cost-state[data-state="complete"] { background:var(--accent); color:var(--accent-foreground); }
+.cost-footnote { margin-block:20px; max-width:900px; }
+@media (max-width:1100px) { .cost-overview { grid-template-columns:minmax(0,1fr); } }
+@media (max-width:480px) { .cost-actions { width:100%; }.cost-actions button { flex:1; }.cost-toolbar>div:first-child,.cost-toolbar [role="combobox"] { width:100%; }.cost-ledger [data-slot="card-content"] { padding-inline:12px; }.cost-overview { gap:14px; } }
