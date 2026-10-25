@@ -19,6 +19,6 @@ export interface PilotControl {
 export interface PilotAdminView extends PilotControl {
   releaseEnabled:boolean;issues:string[];
 }
-export const emptyPilotOffer:PilotOffer={monthlyCents:1900,topups:[1000,2500,5000],priceId:'',
+export const emptyPilotOffer:PilotOffer={monthlyCents:1999,topups:[1000,2500,5000],priceId:'',
   policies:{terms:'',privacy:'',recording:'',credit:'',revision:''},taxReviewed:false,policiesApproved:false,
   operator:{name:'VeilCode Studio',country:'Uganda',address:'Tankhill Road, Muyenga, Kampala',email:'support@veilcode.studio'},rates:{}};

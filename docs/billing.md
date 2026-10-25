@@ -1,8 +1,9 @@
 # Stripe configuration and payment proposal
 
 Updated 25 October 2026. See the current [paid-pilot release controls](paid-pilot-release.md)
-for approved $19/month and $10/$25/$50 top-ups, versioned policies and gated real
-calling. Call rates and business contact details remain pending; live commerce is closed.
+for approved $19.99/month and $10/$25/$50 top-ups, versioned policies and gated real
+calling. Call-rate publication, policy/tax review and activation remain pending;
+business contact details are configured and live commerce is closed.
 The historical planning below explains the original proposal. Environment selection is implemented. An owner-only
 [billing sandbox and customer approval workflow](billing-pilot.md) is now built.
 Live activation remains a separate explicit owner action.
@@ -40,7 +41,8 @@ Development, and keep it in the ignored local environment file. Vercel changes
 need a new deployment. Neither key belongs in a `NEXT_PUBLIC_` variable.
 
 Products, Prices, Customers and subscriptions are isolated between Stripe test
-and live modes. The sandbox has test-only catalog IDs; live IDs are not configured.
+and live modes. The sandbox has test-only catalog IDs; the live plan is separately
+configured in the private pilot offer.
 Webhook signing secrets are separate from API keys and must also be scoped by
 environment. A separate Stripe sandbox is preferable for new development.
 The sandbox's additional test variables are documented in `billing-pilot.md`.

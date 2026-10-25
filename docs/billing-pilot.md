@@ -3,7 +3,8 @@
 Updated 25 October 2026. This document records the isolated sandbox stage.
 The current [paid-pilot release controls](paid-pilot-release.md) add versioned
 offers, policies and real prepaid admission behind closed launch gates. The owner
-has approved $19/month and $10/$25/$50 top-ups; calling rates remain pending.
+has approved $19.99/month for live mode and $10/$25/$50 top-ups; calling rates
+remain pending publication. The earlier $19 sandbox fixture stays separate.
 This earlier release
 adds the owner-reviewed customer workspace and a test-only payment integration.
 It does not open paid calling or accept live payments.

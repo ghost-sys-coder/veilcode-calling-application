@@ -13,7 +13,7 @@ const offer=()=>({...structuredClone(types.emptyPilotOffer),priceId:'price_fixtu
 async function environment(settings,run){const previous={};try{for(const [key,value] of Object.entries(settings)){previous[key]=process.env[key];if(value===undefined)delete process.env[key];else process.env[key]=value;}return await run();}finally{for(const [key,value]of Object.entries(previous)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}}
 
 test('pilot defaults retain approved monthly and top-up amounts without publishing policies or call rates',()=>{
-  assert.equal(types.emptyPilotOffer.monthlyCents,1900);assert.deepEqual(types.emptyPilotOffer.topups,[1000,2500,5000]);
+  assert.equal(types.emptyPilotOffer.monthlyCents,1999);assert.deepEqual(types.emptyPilotOffer.topups,[1000,2500,5000]);
   assert.deepEqual(types.emptyPilotOffer.rates,{});assert.equal(types.emptyPilotOffer.policiesApproved,false);
   assert.ok(values.pilotOfferIssues(types.emptyPilotOffer).length>=5);
   assert.deepEqual(values.pilotOfferIssues(values.pilotOfferInput(offer())),[]);
@@ -28,7 +28,7 @@ test('policy wording covers current calling, recordings, credit and consumer rig
   assert.match(paragraphs.terms,/one operator/);assert.match(paragraphs.terms,/not an emergency/);assert.match(paragraphs.terms,/UK and Australian/);
   assert.match(paragraphs.recording,/every participant/);assert.match(paragraphs.recording,/30 days/);assert.match(paragraphs.privacy,/Neon Postgres/);
   assert.match(paragraphs.credit,/does not itself waive/);assert.match(paragraphs.credit,/14 days/);assert.match(paragraphs.credit,/does not expire|do not expire/);
-  assert.match(paragraphs.terms,/Tankhill Road, Muyenga, Kampala/);assert.match(paragraphs.terms,/support@veilcode\.studio/);
+  assert.match(paragraphs.terms,/Tankhill Road, Muyenga, Kampala/);assert.match(paragraphs.terms,/support@veilcode\.studio/);assert.match(paragraphs.terms,/\$19\.99/);
 });
 function pilotService({control={paused:true,revision:0,draft:null,active:null},enabled=true,stripe={},callers=[]}={}){
   return loadModule('../src/lib/pilot-service.ts',{'server-only':{},'@/lib/billing-config':{...config,liveBillingEnabled:()=>enabled,billingOrigin:()=>'https://example.test'},

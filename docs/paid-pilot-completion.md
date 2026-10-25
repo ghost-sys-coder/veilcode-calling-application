@@ -40,7 +40,8 @@ Review: plan alignment and architecture boundaries passed; shadcn/theme patterns
 are captured in `ui-registry.md`. Commercial activation remains a separate owner
 decision, not an outcome established by mocked or sandbox tests.
 
-Owner decisions received: $19/month, $10/$25/$50 top-ups; VeilCode Studio, Uganda
+Owner decisions received: $19.99/month (confirmed for the live Stripe plan),
+$10/$25/$50 top-ups; VeilCode Studio, Uganda
 with a UK presence; individuals, freelancers, agencies and businesses are eligible
 audiences. Confirmed contact: support@veilcode.studio; business address:
 Tankhill Road, Muyenga, Kampala, Uganda. Call-rate proposals and the exact Stripe

@@ -6,7 +6,7 @@ Live purchases and paid calling remain closed.
 
 ## Proposed offer
 
-- Subscription: approved $19 per operator/month. No included calling credit or
+- Subscription: approved $19.99 per operator/month. No included calling credit or
   dedicated number rental.
 - Credit purchases: approved $10, $25 and $50. No automatic top-up.
 - Ordinary UK landline: draft $0.06 per connected minute.
@@ -78,8 +78,22 @@ rewrite previously saved policy snapshots or accepted contracts.
 
 The existing live API key was checked read-only. Its account reports country GB,
 payments and payouts enabled, details submitted and no currently-due fields.
-No active live $19 USD monthly Price, matching VeilCall live webhook or active
-portal configuration was found. Account readiness is not a tax determination.
+The owner created a $19.99 USD monthly Price and explicitly confirmed keeping
+that amount instead of the original $19 proposal. The live portal has invoice
+history, payment-method changes and end-of-period cancellation enabled, with
+plan changes disabled; its configuration ID is now scoped to Vercel Production.
+The live webhook is enabled at the correct URL, and the missing checkout,
+subscription, refund and dispute event subscriptions have been added to it.
+Its signing-secret variable is scoped only to Production. Its snapshot version
+is currently `2026-08-26.dahlia`, while canonical API reads use the installed
+SDK's `2026-09-30.endive`. This is not a verified match to the setup guide below;
+review the version/consumed event envelope before commercial activation. The
+existing endpoint and signing secret were preserved. Successful Stripe delivery
+and final acceptance still need verification. Account readiness is not a tax determination.
+The confirmed live Price and business details are saved as an audited private
+pilot offer. Policy and tax approvals remain false, and its rate card is empty;
+the proposed calling prices remain separately saved in Call costs. No offer has
+been activated, and no customer payment or calling-credit entry was created.
 Confirm that Stripe's legal merchant identity and payout details represent the
 actual operator; UK presence alone does not establish a separate UK company.
 
@@ -89,7 +103,7 @@ actual operator; UK presence alone does not establish a separate UK company.
    address is not an instruction to replace a registered UK entity's address.
 2. Open **More > Product catalog > Add product**. Name it **VeilCall — Single
    operator**. Describe browser calling and call management; calling credit and
-   number rental are separate. Use flat-rate **$19.00 USD, recurring monthly**,
+   number rental are separate. Use flat-rate **$19.99 USD, recurring monthly**,
    one operator, without a trial or setup fee. Review tax treatment before
    publication: the current integration expects any applicable tax included in
    the approved total, rather than adding tax on top. Do not enable automatic

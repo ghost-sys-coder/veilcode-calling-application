@@ -1,6 +1,6 @@
 # Paid pilot release controls
 
-VeilCall's approved starting offer is **$19 per operator/month**, with separate
+VeilCall's approved starting offer is **$19.99 per operator/month**, with separate
 **$10/$25/$50 USD credit purchases**. No connected-minute or attempt rates have
 been approved for publication. Private proposals and Stripe setup instructions
 are in `pricing-and-stripe-setup.md`. Live commerce remains closed until the owner reviews them and
