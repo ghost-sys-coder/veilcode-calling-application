@@ -30,8 +30,15 @@ Local evidence: 184 tests passed, lint/typecheck passed, patched production buil
 passed. The live-pilot SQL rollback check passed twice (including atomic checkout
 guards on the final run); existing settlement recovery SQL checks passed. The
 component browser checks passed across phone/tablet/desktop with intercepted API
-responses and no calls or payments. Final deployed verification is recorded in
-the release report after deployment.
+responses and no calls or payments. Authenticated deployed preview verification
+also passed: anonymous protection, sandbox isolation, empty/paused release state,
+owner setup at 390/768/1440px, complete policy bundle at 320/390/768/1440px,
+unchanged wallets/drafts and disabled real calling. The verifier signed out its
+own session and removed its temporary private bypass input afterward.
+
+Review: plan alignment and architecture boundaries passed; shadcn/theme patterns
+are captured in `ui-registry.md`. Commercial activation remains a separate owner
+decision, not an outcome established by mocked or sandbox tests.
 
 Owner decisions received: $19/month, $10/$25/$50 top-ups; VeilCode Studio, Uganda
 with a UK presence; individuals, freelancers, agencies and businesses are eligible

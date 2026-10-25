@@ -70,7 +70,8 @@ Customers need owner-approved workspace access, an active assigned number and a
 published rate for that number before being offered payment. Policy acceptance
 records the immutable offer ID and timestamp. A separate, unchecked-by-default
 immediate-service request preserves consumer cancellation rights; without it,
-paid calling waits 14 days. Replaying acceptance cannot alter the original choice.
+paid calling and checkout wait 14 days, so the customer is not charged before
+calling can become usable. Replaying acceptance cannot alter the original choice.
 
 Hosted Checkout uses server-owned prices and orders. Current subscription pricing
 comes from its server-created order; publishing another offer does not silently

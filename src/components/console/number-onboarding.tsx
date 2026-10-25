@@ -36,7 +36,7 @@ export function NumberOnboarding() {
     } finally {setBusy(false);}
   }
   return <main className="shell number-setup-page">
-    <div className="number-page-heading"><div><p className="dialer-eyebrow">YOUR BUSINESS / YOUR CALLING IDENTITY</p><h1>A number <em>of your own.</em></h1><p>Set up your business details, then bring an existing number or request a new one.</p></div>
+    <div className="number-page-heading"><div><p className="dialer-eyebrow">YOUR ACCOUNT / YOUR CALLING IDENTITY</p><h1>A number <em>of your own.</em></h1><p>Set up your profile, then bring an existing number or request a new one.</p></div>
       {summary?.operatorApproved && <Button asChild variant="outline"><Link href="/console">Open dialer<ArrowRight aria-hidden="true"/></Link></Button>}
     </div>
     {loading && <p className="number-loading" role="status">Loading your number setup…</p>}
@@ -44,11 +44,11 @@ export function NumberOnboarding() {
     {summary && <>
       {!summary.operatorApproved && <AccessRequest profileReady={!!summary.profile}/>}
       <div className="number-setup-grid">
-        <Card><CardHeader><span className="number-step">01 / BUSINESS DETAILS</span><CardTitle>Introduce your business</CardTitle><CardDescription>Tell us who will use the number and what you’ll be calling about.</CardDescription></CardHeader>
-          <CardContent><BusinessProfileForm key={JSON.stringify(summary.profile)} profile={summary.profile} busy={busy} onSave={input=>save("/api/onboarding/profile","PUT",input,"Business details saved.")}/></CardContent></Card>
+        <Card><CardHeader><span className="number-step">01 / PROFILE DETAILS</span><CardTitle>Introduce yourself or your business</CardTitle><CardDescription>Tell us who will use the number and what you’ll be calling about.</CardDescription></CardHeader>
+          <CardContent><BusinessProfileForm key={JSON.stringify(summary.profile)} profile={summary.profile} busy={busy} onSave={input=>save("/api/onboarding/profile","PUT",input,"Profile details saved.")}/></CardContent></Card>
         <Card><CardHeader><span className="number-step">02 / CALLING NUMBER</span><CardTitle>Choose how to get connected</CardTitle><CardDescription>Every number is reviewed and assigned to your account.</CardDescription></CardHeader>
           <CardContent>{summary.profile ? <NumberRequestForm busy={busy} onSubmit={input=>save("/api/onboarding/numbers","POST",input,"Number request submitted for review.")}/>
-            : <div className="number-empty"><Phone aria-hidden="true"/><p>Save your business details to choose your calling number.</p></div>}</CardContent></Card>
+            : <div className="number-empty"><Phone aria-hidden="true"/><p>Save your profile details to choose your calling number.</p></div>}</CardContent></Card>
       </div>
       <p className="number-feedback" role="status">{message}</p>
       {(summary.legacyCallerIds.length>0 || summary.identities.length>0) && <section className="number-assigned-section" aria-labelledby="assigned-numbers-heading"><h2 id="assigned-numbers-heading">Your calling numbers</h2><div className="number-assigned-list">
@@ -59,7 +59,7 @@ export function NumberOnboarding() {
         {summary.requests.length ? <div className="number-request-list">{summary.requests.map(item=><NumberRequestCard key={item.id} item={item} busy={busy} verificationEnabled={summary.verificationEnabled} onVerify={()=>save(`/api/onboarding/numbers/${item.id}/verify`,"POST",{consent:true},"Verification requested. Answer the call and enter the code shown below.")}/>)}</div>
           : <p className="number-hint">Your number requests will appear here, along with their review and verification progress.</p>}
       </section>
-      {summary.admin && <div className="number-admin-link"><ShieldCheck aria-hidden="true"/><div><strong>Number administration</strong><p>Review business details, approve verification and assign provisioned numbers.</p></div><Button asChild variant="outline"><Link href="/console/numbers/review">Review requests<ArrowRight aria-hidden="true"/></Link></Button></div>}
+      {summary.admin && <div className="number-admin-link"><ShieldCheck aria-hidden="true"/><div><strong>Number administration</strong><p>Review profiles, approve verification and assign provisioned numbers.</p></div><Button asChild variant="outline"><Link href="/console/numbers/review">Review requests<ArrowRight aria-hidden="true"/></Link></Button></div>}
     </>}
   </main>;
 }
