@@ -28,7 +28,7 @@ test('policy wording covers current calling, recordings, credit and consumer rig
   assert.match(paragraphs.terms,/one operator/);assert.match(paragraphs.terms,/not an emergency/);assert.match(paragraphs.terms,/UK and Australian/);
   assert.match(paragraphs.recording,/every participant/);assert.match(paragraphs.recording,/30 days/);assert.match(paragraphs.privacy,/Neon Postgres/);
   assert.match(paragraphs.credit,/does not itself waive/);assert.match(paragraphs.credit,/14 days/);assert.match(paragraphs.credit,/does not expire|do not expire/);
-  assert.match(paragraphs.terms,/address to be supplied/);assert.match(paragraphs.terms,/email to be supplied/);
+  assert.match(paragraphs.terms,/address to be supplied/);assert.match(paragraphs.terms,/support@veilcode\.studio/);
 });
 function pilotService({control={paused:true,revision:0,draft:null,active:null},enabled=true,stripe={},callers=[]}={}){
   return loadModule('../src/lib/pilot-service.ts',{'server-only':{},'@/lib/billing-config':{...config,liveBillingEnabled:()=>enabled,billingOrigin:()=>'https://example.test'},
