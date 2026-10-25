@@ -42,5 +42,8 @@ decision, not an outcome established by mocked or sandbox tests.
 
 Owner decisions received: $19/month, $10/$25/$50 top-ups; VeilCode Studio, Uganda
 with a UK presence; individuals, freelancers, agencies and businesses are eligible
-audiences. Still pending: exact caller/route rates, business address, support/privacy
-email, approval of the tailored policy drafts/tax treatment and live activation.
+audiences. Confirmed contact: support@veilcode.studio; business address:
+Tankhill Road, Muyenga, Kampala, Uganda. Call-rate proposals and the exact Stripe
+dashboard checklist are in `pricing-and-stripe-setup.md`. Rates remain private;
+UK mobile needs a supplier-prefix check before the standard mobile proposal can
+be published. Policy/tax approval and live activation remain pending.

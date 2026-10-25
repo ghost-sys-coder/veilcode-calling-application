@@ -2,7 +2,8 @@
 
 VeilCall's approved starting offer is **$19 per operator/month**, with separate
 **$10/$25/$50 USD credit purchases**. No connected-minute or attempt rates have
-been approved. Live commerce remains closed until the owner supplies them and
+been approved for publication. Private proposals and Stripe setup instructions
+are in `pricing-and-stripe-setup.md`. Live commerce remains closed until the owner reviews them and
 completes the release controls. Existing configured owner calling is preserved.
 
 ## Owner setup
