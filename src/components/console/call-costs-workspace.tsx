@@ -9,6 +9,7 @@ import {Label} from '@/components/ui/label';
 import {Select,SelectTrigger,SelectValue,SelectContent,SelectItem} from '@/components/ui/select';
 import {Table,TableHeader,TableHead,TableBody,TableRow,TableCell,TableCaption} from '@/components/ui/table';
 import {costRanges,type CostRange,type CallCostReport,type CostAmounts,type CostCall,type CostSyncResult} from '@/lib/call-cost-types';
+import {RateDrafts} from '@/components/console/rate-drafts';
 
 const money=(micro:number,currency:string)=>new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:6}).format(micro/1000000);
 const states={untracked:'Not synced',pending:'Price pending',complete:'Published',stale:'Sync needed'};
@@ -58,5 +59,6 @@ export function CallCostsWorkspace(){
       </CardContent></Card>
       <p className="cost-footnote">New finished-call callbacks capture costs automatically. Sync costs checks saved calls again when Twilio publishes delayed prices. Sync recent calls in call history to import older activity. This report does not debit calling credit.</p>
     </>}
+    <RateDrafts range={range} refreshKey={revision}/>
   </main>;
 }
