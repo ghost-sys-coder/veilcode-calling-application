@@ -12,26 +12,26 @@ test('owner rechecks require a bounded note, a current revision and no financial
     {...input,id:'bad'},{...input,revision:0},{...input,revision:1.2},{...input,note:'short'},{...input,note:' '.repeat(30)},{...input,note:'x'.repeat(501)}])
     assert.throws(()=>review.settlementRecheckInput(value),error=>error.status===400);
 });
-test('scheduled recovery pins its own workflow/audience and refuses email scheduler identities',async()=>{
+test('scheduled recovery pins the shared workflow and its own audience',async()=>{
   const repository='ghost-sys-coder/veilcode-calling-application',audience='https://call.veilcode.studio/call-settlement-recovery';
   const valid={repository_id:'1414889716',repository_owner_id:'84653892',repository,ref:'refs/heads/master',sub:'signed-subject',
-    workflow_ref:`${repository}/.github/workflows/call-settlement-recovery.yml@refs/heads/master`,event_name:'schedule'};
+    workflow_ref:`${repository}/.github/workflows/callback-email-reminders.yml@refs/heads/master`,event_name:'schedule'};
   let payload=valid,fail=false,verified=0;
   const auth=loadModule('../src/lib/github-scheduler-auth.ts',{'server-only':{},jose:{createRemoteJWKSet:()=>({}),jwtVerify:async(_token,_keys,options)=>{
     verified++;assert.equal(options.audience,audience);assert.equal(options.issuer,'https://token.actions.githubusercontent.com');assert.equal(options.maxTokenAge,'10m');
     assert.ok(options.requiredClaims.includes('iat'));assert.ok(options.requiredClaims.includes('exp'));if(fail)throw new Error('expired');return {payload};
   }}});
   const request=value=>new Request('https://app.test',{headers:{'x-veilcall-scheduler-token':value}});
-  for(const token of ['','not-a-jwt','a'.repeat(20001)])assert.equal(await auth.githubSchedulerAuthorized(request(token),audience,'call-settlement-recovery.yml'),false);
-  assert.equal(verified,0);assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'call-settlement-recovery.yml'),true);
-  for(const key of Object.keys(valid)){payload={...valid,[key]:'wrong'};if(key==='sub')payload.sub='';assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'call-settlement-recovery.yml'),false);}
-  payload={...valid,workflow_ref:`${repository}/.github/workflows/callback-email-reminders.yml@refs/heads/master`};assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'call-settlement-recovery.yml'),false);
-  payload=valid;fail=true;assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'call-settlement-recovery.yml'),false);
+  for(const token of ['','not-a-jwt','a'.repeat(20001)])assert.equal(await auth.githubSchedulerAuthorized(request(token),audience,'callback-email-reminders.yml'),false);
+  assert.equal(verified,0);assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'callback-email-reminders.yml'),true);
+  for(const key of Object.keys(valid)){payload={...valid,[key]:'wrong'};if(key==='sub')payload.sub='';assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'callback-email-reminders.yml'),false);}
+  payload={...valid,workflow_ref:`${repository}/.github/workflows/other.yml@refs/heads/master`};assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'callback-email-reminders.yml'),false);
+  payload=valid;fail=true;assert.equal(await auth.githubSchedulerAuthorized(request('a.b.c'),audience,'callback-email-reminders.yml'),false);
 });
 test('the worker route authenticates before storage and exposes safe failure responses',async()=>{
   let authorized=false,fail=false,runs=0;
   const route=loadModule('../src/app/api/internal/call-settlements/route.ts',{
-    '@/lib/github-scheduler-auth':{githubSchedulerAuthorized:async(_request,audience,workflow)=>{assert.equal(audience,'https://call.veilcode.studio/call-settlement-recovery');assert.equal(workflow,'call-settlement-recovery.yml');return authorized;}},
+    '@/lib/github-scheduler-auth':{githubSchedulerAuthorized:async(_request,audience,workflow)=>{assert.equal(audience,'https://call.veilcode.studio/call-settlement-recovery');assert.equal(workflow,'callback-email-reminders.yml');return authorized;}},
     '@/lib/settlement-worker':{runSettlementWorker:async()=>{runs++;if(fail)throw new Error('private');return {processed:0};}},'@/lib/voice-responses':{voiceJson:(data,status=200)=>Response.json(data,{status})},
   });
   const request=new Request('https://app.test');assert.equal((await route.GET(request)).status,401);assert.equal(runs,0);
@@ -54,7 +54,9 @@ test('the owner endpoint authenticates before parsing and scopes rechecks to the
   body=input;assert.equal((await route.POST(request())).status,200);assert.deepEqual(events,[['owner',{id,revision:3,note:input.note}],parent]);
 });
 test('the scheduled workflow never checks out code, dispatches email or logs provider identities',()=>{
-  const workflow=readFileSync(new URL('../.github/workflows/call-settlement-recovery.yml',import.meta.url),'utf8');
+  const workflow=readFileSync(new URL('../.github/workflows/callback-email-reminders.yml',import.meta.url),'utf8');
   assert.match(workflow,/id-token: write/);assert.match(workflow,/cancel-in-progress: false/);assert.match(workflow,/X-VeilCall-Scheduler-Token/);assert.match(workflow,/::add-mask::/);
-  assert.doesNotMatch(workflow,/uses:|api\/voice\/reminders|TWILIO_AUTH_TOKEN|RESEND_API_KEY/);
+  assert.match(workflow,/if: \$\{\{ !cancelled\(\) \}\}/);
+  const recovery=workflow.split('- name: Recover unfinished call settlements')[1];assert.ok(recovery);
+  assert.doesNotMatch(recovery,/uses:|api\/voice\/reminders|TWILIO_AUTH_TOKEN|RESEND_API_KEY/);
 });

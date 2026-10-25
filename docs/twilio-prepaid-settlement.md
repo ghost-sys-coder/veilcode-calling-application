@@ -72,11 +72,12 @@ or stale owner actions fail with 409. A recheck fetches canonical Twilio evidenc
 the owner cannot enter a duration, charge or provider identity, release an active
 hold manually, clear a wallet block, or bypass a mismatched call binding.
 
-The dedicated `call-settlement-recovery.yml` workflow requests a GitHub OIDC token
-and calls `/api/internal/call-settlements` approximately every five minutes while
-the app is closed. Its audience and exact repository, owner, master ref and workflow
-claims are pinned independently of reminder emails. It requires no added API key,
-does not check out repository code, and cannot trigger reminder email dispatch.
+The existing `callback-email-reminders.yml` workflow has a recovery step using its
+own GitHub OIDC audience, with the exact repository, owner, master ref and workflow
+claims pinned. It calls `/api/internal/call-settlements` approximately every five
+minutes while the app is closed, even if the email step failed. The shared runner
+avoids adding a second scheduled job. Recovery requires no added API key, does not
+check out repository code, and cannot use its token to trigger reminder emails.
 GitHub can delay scheduled jobs; the Billing section shows the latest actual check.
 Each invocation processes three due jobs, using the existing per-job leases and
 debit idempotency. Conflicting evidence still needs owner investigation. Storage
