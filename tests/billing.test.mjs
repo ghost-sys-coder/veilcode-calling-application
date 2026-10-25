@@ -9,8 +9,9 @@ const rates=loadModule("../src/lib/billing-rates.ts",{"server-only":{},"@/lib/bi
 const json=(data,status=200)=>Response.json(data,{status});
 async function environment(values,run){const previous=Object.fromEntries(Object.keys(values).map(key=>[key,process.env[key]]));try{for(const [key,value]of Object.entries(values)){if(value===undefined)delete process.env[key];else process.env[key]=value;}return await run();}finally{for(const [key,value]of Object.entries(previous)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}}
 const fixtureEnv={VEILCALL_BILLING_TEST_ENABLED:"true",STRIPE_TEST_MONTHLY_PRICE_ID:"price_fixture",STRIPE_TEST_WEBHOOK_SECRET:"whsec_"+randomBytes(24).toString("hex")};
+const pilotImports={"@/lib/pilot-service":{},"@/lib/pilot-store":{},"@/lib/live-calling-store":{}};
 
-test("billing is opt-in, live payments cannot be enabled by environment flags",async()=>{
+test("billing is opt-in and defaults closed in live mode",async()=>{
   for(const mode of ["live","test"]){const current=loadModule("../src/lib/billing-config.ts",{"server-only":{},"@/lib/stripe-config":{getStripeMode:()=>mode}});
     await environment({...fixtureEnv,VEILCALL_BILLING_LIVE_ENABLED:"true"},()=>{assert.equal(current.liveBillingEnabled(),false);assert.equal(current.billingEnabled(),mode==="test");if(mode==="live")assert.throws(()=>current.requireTestBilling(),error=>error.status===409);});
   }
@@ -40,10 +41,10 @@ test("reservations use integer money, minimum funding and five-minute limits; pa
   assert.equal(rates.usageCharge(61,60000,10000),130000);
   assert.throws(()=>rates.usageCharge(-1,60000,10000));
 });
-test("database approval and test balances never grant real calling access",()=>{
-  const guarded=loadModule("../src/lib/billing-call-access.ts",{"server-only":{},"@/lib/access":{isApprovedOperator:id=>id==="user_owner"},"@/lib/billing-config":config});
-  assert.doesNotThrow(()=>guarded.requireRealCallingAccess("user_owner"));
-  assert.throws(()=>guarded.requireRealCallingAccess("user_customer"),error=>error.status===402);
+test("database approval and test balances never grant real calling access",async()=>{
+  const guarded=loadModule("../src/lib/billing-call-access.ts",{...pilotImports,"@/lib/billing-store":{},"server-only":{},"@/lib/access":{isApprovedOperator:id=>id==="user_owner"},"@/lib/billing-config":config});
+  await assert.doesNotReject(()=>guarded.requireRealCallingAccess("user_owner"));
+  await assert.rejects(()=>guarded.requireRealCallingAccess("user_customer"),error=>error.status===402);
 });
 
 test("workspace access awaits owner review and fails closed during a customer storage outage",async()=>{
@@ -58,10 +59,10 @@ test("workspace access awaits owner review and fails closed during a customer st
 });
 
 test("approved customers still receive no voice token or call permit before live billing launches",async()=>{
-  const guard=loadModule("../src/lib/billing-call-access.ts",{"server-only":{},"@/lib/access":{isApprovedOperator:()=>false},"@/lib/billing-config":config});
+  const guard=loadModule("../src/lib/billing-call-access.ts",{...pilotImports,"@/lib/billing-store":{},"server-only":{},"@/lib/access":{isApprovedOperator:()=>false},"@/lib/billing-config":config});
   let providerReads=0;
   for(const [path,method]of [["token","GET"],["authorize","POST"]]){
-    const handlers=loadModule(`../src/app/api/voice/${path}/route.ts`,{"@clerk/nextjs/server":{auth:async()=>({userId:"user_customer"})},twilio:{},
+    const handlers=loadModule(`../src/app/api/voice/${path}/route.ts`,{...pilotImports,"@/lib/number-access":{numberBody:request=>request.json()},"@clerk/nextjs/server":{auth:async()=>({userId:"user_customer"})},twilio:{},
       "@/lib/access":{operatorHasAccess:async()=>true},"@/lib/billing-call-access":guard,"@/lib/billing-config":config,
       "@/lib/voice-config":{getVoiceConfig:()=>{providerReads++;throw new Error("provider must not be used");}},"@/lib/voice-responses":{voiceJson:json,isSameOrigin:()=>true},
       "@/lib/operator-caller-ids":{},"@/lib/caller-ids":{},"@/lib/call-ticket":{},"@/lib/destination":{validateCallingDestination:()=>"+442079460123"}});
@@ -72,7 +73,7 @@ test("approved customers still receive no voice token or call permit before live
 });
 
 function service({approved=true,admin=true,stripe={},store={},database={}}={}){
-  return loadModule("../src/lib/billing-service.ts",{"server-only":{},"@/lib/stripe":{stripeService:()=>stripe},"@/lib/stripe-config":{getStripeMode:()=>"test"},
+  return loadModule("../src/lib/billing-service.ts",{...pilotImports,"server-only":{},"@/lib/stripe":{stripeService:()=>stripe},"@/lib/stripe-config":{getStripeMode:()=>"test"},
     "@/lib/billing-config":config,"@/lib/access":{operatorHasAccess:async()=>approved},"@/lib/number-access":{isNumberAdmin:()=>admin},
     "@/lib/customer-access":{billingTransaction:async run=>run(database)},"@/lib/billing-store":store});
 }
@@ -123,7 +124,7 @@ test("a delayed unpaid checkout event cannot reopen a failed or expired order",a
 
 test("billing, access review and simulation APIs authenticate before reading or writing",async()=>{
   for(const [path,method] of [["billing/route","GET"],["billing/checkout/route","POST"],["billing/portal/route","POST"],["billing/quote/route","POST"],["billing/simulate/route","POST"],["access/route","POST"],["access/review/route","GET"],["access/review/route","POST"]]){
-    const handler=loadModule(`../src/app/api/${path}.ts`,{"@/lib/billing-auth":{billingOperator:async()=>json({error:"Denied"},403)},
+    const handler=loadModule(`../src/app/api/${path}.ts`,{...pilotImports,"@/lib/billing-auth":{billingOperator:async()=>json({error:"Denied"},403)},
       "@/lib/customer-access":{},"@/lib/access":{},"@/lib/billing-config":{},"@/lib/stripe-config":{},"@/lib/number-access":{},"@/lib/billing-store":{},"@/lib/billing-service":{},"@/lib/billing-rates":{},"@/lib/operator-caller-ids":{},"@/lib/voice-responses":{voiceJson:json}});
     assert.equal((await handler[method](new Request("https://app.test/api",{method}))).status,403);
   }

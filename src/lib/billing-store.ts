@@ -11,7 +11,7 @@ export const accountFields=`id,operator_id AS "operatorId",mode,stripe_customer_
   subscription_status AS "subscriptionStatus",paid_until::text AS "paidUntil",balance_micro::float8 AS "balanceMicro",
   held_micro::float8 AS "heldMicro",blocked`;
 const orderFields=`id,account_id AS "accountId",kind,amount_cents AS "amountCents",price_id AS "priceId",status,
-  checkout_id AS "checkoutId",checkout_url AS "checkoutUrl",payment_intent_id AS "paymentIntentId"`;
+  checkout_id AS "checkoutId",checkout_url AS "checkoutUrl",payment_intent_id AS "paymentIntentId",offer_id AS "offerId"`;
 export const reservationFields=`r.id,r.account_id AS "accountId",a.operator_id AS "operatorId",a.mode,r.to_number AS "to",r.from_number AS "from",r.route,
   r.rate_micro AS "rateMicro",r.fee_micro AS "feeMicro",r.held_micro AS "heldMicro",r.max_seconds AS "maxSeconds",r.status,
   r.call_sid AS "callSid",r.expires_at::text AS "expiresAt"`;
@@ -42,23 +42,40 @@ export async function listBillingEntries(accountId:string) {
   return (await reviewDatabase().query(`SELECT id,kind,amount_micro::float8 AS "amountMicro",description,created_at::text AS "createdAt"
     FROM veilcall_billing_ledger WHERE account_id=$1 ORDER BY created_at DESC,id DESC LIMIT 50`,[accountId])).rows;
 }
-export async function createBillingOrder(accountId:string,kind:"subscription"|"topup",amountCents:number,priceId:string|null):Promise<BillingOrder> {
+export async function subscriptionMonthlyCents(account:BillingAccount):Promise<number|null>{
+  if(!account.subscriptionId)return null;
+  return (await reviewDatabase().query(`SELECT amount_cents AS amount FROM veilcall_billing_orders WHERE account_id=$1
+    AND subscription_id=$2 AND kind='subscription' AND status='paid' ORDER BY created_at DESC LIMIT 1`,[account.id,account.subscriptionId])).rows[0]?.amount??null;
+}
+export async function createBillingOrder(accountId:string,kind:"subscription"|"topup",amountCents:number,priceId:string|null,offerId:string|null=null):Promise<BillingOrder> {
   return billingTransaction(async client=>{
     const account=await lockBillingAccount(client,accountId);
     if(account.blocked)throw new BillingError("Billing is paused. Contact the owner.",403);
+    if(account.mode==='live'){
+      if(!offerId)throw new BillingError('A published offer is required before payment.',403);
+      const release=(await client.query(`SELECT o.provider_account_sid AS provider,o.config FROM veilcall_pilot_control c
+        JOIN veilcall_pilot_offers o ON o.id=c.active_id WHERE c.singleton=true AND c.paused=false AND o.id=$1 FOR SHARE OF c`,[offerId])).rows[0];
+      if(!release||release.provider!==process.env.TWILIO_ACCOUNT_SID?.trim())throw new BillingError('New checkouts are paused or the offer changed.',409);
+      if((kind==='subscription'&&(priceId!==release.config.priceId||amountCents!==release.config.monthlyCents))||(kind==='topup'&&(!release.config.topups.includes(amountCents)||priceId!==null)))throw new BillingError('Payment amounts must match the approved offer.',403);
+      if(kind==='topup'&&(account.subscriptionStatus!=='active'||!account.paidUntil||Date.parse(account.paidUntil)<=Date.now()))throw new BillingError('A current paid subscription is required before adding credit.',402);
+      const usable=await client.query(`SELECT 1 FROM veilcall_operator_access a JOIN veilcall_caller_identities i ON i.operator_id=a.operator_id
+        WHERE a.operator_id=$1 AND a.status='approved' AND i.status='active' AND i.account_sid=$2 AND $3::jsonb ? i.phone_number FOR SHARE OF a,i`,[account.operatorId,release.provider,JSON.stringify(release.config.rates)]);
+      if(!usable.rowCount||!(await client.query(`SELECT 1 FROM veilcall_policy_acceptances WHERE operator_id=$1 AND offer_id=$2
+        AND (immediate_service_requested OR accepted_at<=now()-interval '14 days')`,[account.operatorId,offerId])).rowCount)throw new BillingError('Account, calling number, rate and policy approval are required before payment.',409);
+    }
     // An expired browser redirect is not evidence that Stripe's session expired.
     // Keep creating orders reserved for their full provider expiration window.
     await client.query(`UPDATE veilcall_billing_orders SET status='expired' WHERE account_id=$1 AND status IN ('creating','open') AND expires_at<now()`,[accountId]);
     const pending=await client.query<BillingOrder>(`SELECT ${orderFields} FROM veilcall_billing_orders
       WHERE account_id=$1 AND status IN ('creating','open') ORDER BY created_at DESC LIMIT 1`,[accountId]);
     if(pending.rows[0]) {
-      if(pending.rows[0].kind!==kind || pending.rows[0].amountCents!==amountCents)throw new BillingError("Finish your existing checkout before starting another payment.",409);
+      if(pending.rows[0].kind!==kind || pending.rows[0].amountCents!==amountCents || pending.rows[0].priceId!==priceId || (pending.rows[0].offerId??null)!==offerId)throw new BillingError("Finish your existing checkout before starting another payment.",409);
       return pending.rows[0];
     }
     if(kind==="subscription" && account.subscriptionId && !["canceled","incomplete_expired","none"].includes(account.subscriptionStatus))
       throw new BillingError("You already have a subscription. Use Manage billing to update it.",409);
-    return (await client.query<BillingOrder>(`INSERT INTO veilcall_billing_orders(id,account_id,kind,amount_cents,price_id,expires_at)
-      VALUES($1,$2,$3,$4,$5,date_trunc('second',now())+interval '1 hour') RETURNING ${orderFields}`,[randomUUID(),accountId,kind,amountCents,priceId])).rows[0];
+    return (await client.query<BillingOrder>(`INSERT INTO veilcall_billing_orders(id,account_id,kind,amount_cents,price_id,offer_id,expires_at)
+      VALUES($1,$2,$3,$4,$5,$6,date_trunc('second',now())+interval '1 hour') RETURNING ${orderFields}`,[randomUUID(),accountId,kind,amountCents,priceId,offerId])).rows[0];
   });
 }
 export async function billingOrderExpiry(orderId:string):Promise<number> {
@@ -132,6 +149,11 @@ export async function settleBillingReservation(id:string,callSid:string,seconds:
     const rawCharge=usageCharge(seconds,reservation.rateMicro,reservation.feeMicro);
     // Never charge more than the quote. Investigate provider duration discrepancies.
     const charge=Math.min(rawCharge,reservation.heldMicro);
+    if(reservation.mode==='live' && providerCost && typeof providerCost==='object' && 'source' in providerCost && providerCost.source==='twilio-api'){
+      const evidence=providerCost as {child?:{sid?:string;status?:string}};
+      if(evidence.child?.sid!==childSid||!['completed','busy','failed','no-answer','canceled'].includes(evidence.child?.status??''))throw new BillingError('Canonical call outcome is unavailable.',409);
+      await client.query(`UPDATE veilcall_calls SET status=$3,duration_seconds=$4,updated_at=now() WHERE call_sid=$1 AND operator_id=$2`,[callSid,reservation.operatorId,evidence.child.status,seconds]);
+    }
     await appendBillingEntry(client,reservation.accountId,`call:${id}`,"usage",-charge,`${reservation.route} · ${seconds}s${reservation.mode==="test" ? " · simulation" : ""}`);
     await client.query(`UPDATE veilcall_billing_accounts SET held_micro=held_micro-$2,blocked=blocked OR $3,updated_at=now() WHERE id=$1`,
       [reservation.accountId,reservation.heldMicro,rawCharge>reservation.heldMicro]);

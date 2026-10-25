@@ -16,7 +16,7 @@ const rates=loadModule('../src/lib/billing-rates.ts',{'server-only':{},'@/lib/bi
 const access=loadModule('../src/lib/customer-access.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/billing-config':config,'@/lib/access':{}});
 const billing=loadModule('../src/lib/billing-store.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/customer-access':access,'@/lib/billing-config':config,'@/lib/billing-rates':rates});
 const evidence=loadModule('../src/lib/twilio-settlement-proof.ts',{'server-only':{}});
-const store=loadModule('../src/lib/twilio-settlement-store.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/customer-access':access,'@/lib/billing-config':config,'@/lib/billing-store':billing,'@/lib/twilio-settlement-proof':evidence});
+const store=loadModule('../src/lib/twilio-settlement-store.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/customer-access':access,'@/lib/billing-config':config,'@/lib/billing-store':billing,'@/lib/twilio-settlement-proof':evidence,'@/lib/live-calling-store':{assertLiveAdmission:async()=>{}}});
 const review=loadModule('../src/lib/settlement-review-store.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/customer-access':access,'@/lib/billing-config':config,'@/lib/twilio-settlement-store':store});
 let providerPending=false,providerReads=0;
 const service=loadModule('../src/lib/twilio-settlement-service.ts',{'server-only':{},'@/lib/billing-config':config,'@/lib/operator-caller-ids':{},'@/lib/voice-service':{},
@@ -31,13 +31,13 @@ const service=loadModule('../src/lib/twilio-settlement-service.ts',{'server-only
 });
 const worker=loadModule('../src/lib/settlement-worker.ts',{'server-only':{},'@/lib/twilio-settlement-service':service,'@/lib/settlement-review-store':review,'@/lib/twilio-settlement-store':store});
 const tag=randomBytes(8).toString('hex'),user='settlement_'+tag,accountSid='AC'+'a'.repeat(32),from='+442079460123',to='+61293744000';
-const checks=[];let account;
+const checks=[];let account;const offerId=randomUUID();
 async function fixture(mode='live',accepted=true){
   const owner=await billing.getBillingAccount(user,mode);
   await query("UPDATE veilcall_billing_accounts SET subscription_status='active',paid_until=now()+interval '1 day',blocked=false WHERE id=$1",[owner.id]);
   const quote=randomUUID(),id=randomUUID(),sid='CA'+randomBytes(16).toString('hex');
-  await query(`INSERT INTO veilcall_prepaid_quotes(id,account_id,to_number,from_number,route,rate_micro,fee_micro,max_seconds,held_micro,expires_at)
-    VALUES($1,$2,$3,$4,'Fixture',60000,10000,300,310000,now()+interval '45 seconds')`,[quote,owner.id,to,from]);
+  await query(`INSERT INTO veilcall_prepaid_quotes(id,account_id,to_number,from_number,route,rate_micro,fee_micro,max_seconds,held_micro,expires_at,offer_id)
+    VALUES($1,$2,$3,$4,'Fixture',60000,10000,300,310000,now()+interval '45 seconds',$5)`,[quote,owner.id,to,from,offerId]);
   await query(`INSERT INTO veilcall_call_reservations(id,account_id,to_number,from_number,route,rate_micro,fee_micro,max_seconds,held_micro,expires_at,quote_id,rate_accepted_at,rate_acceptance_version)
     VALUES($1,$2,$3,$4,'Fixture',60000,10000,300,310000,now()+interval '45 seconds',$5,$6,$7)`,[id,owner.id,to,from,quote,accepted?new Date():null,mode==='live'?'prepaid-live-v1':'prepaid-test-v1']);
   await query('UPDATE veilcall_billing_accounts SET balance_micro=1000000,held_micro=310000 WHERE id=$1',[owner.id]);
@@ -56,6 +56,7 @@ try{
   const directory=new URL('../migrations/',import.meta.url),files=(await readdir(directory)).filter(file=>/^\d+_.*\.sql$/.test(file)).sort();
   for(let pass=0;pass<2;pass++)for(const file of files)await query(await readFile(new URL(file,directory),'utf8'));
   console.log(JSON.stringify({stage:'migration_verified'}));
+  await query("INSERT INTO veilcall_pilot_offers(id,actor_id,provider_account_sid,config,policy_snapshot) VALUES($1,$2,$3,'{}','{}')",[offerId,user,accountSid]);
   account=await billing.getBillingAccount(user,'live');
   const test=await fixture('test');await assert.rejects(bind(test),error=>error.status===403);await releaseUnused(test);
   const unaccepted=await fixture('live',false);await assert.rejects(bind(unaccepted),error=>error.status===403);await releaseUnused(unaccepted);

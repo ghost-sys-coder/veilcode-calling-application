@@ -6,6 +6,7 @@ import {BillingError} from '@/lib/billing-config';
 import {getCallReservation,lockBillingAccount,reservationFields} from '@/lib/billing-store';
 import {realTwilioAccount,type SettlementReason} from '@/lib/twilio-settlement-proof';
 import type {CallReservation} from '@/lib/billing-types';
+import {assertLiveAdmission} from '@/lib/live-calling-store';
 
 export interface TwilioSettlementJob {reservation:CallReservation;accountSid:string;lease:string;attempts:number}
 // Called only by the future signed live-call admission path. Account locking,
@@ -20,6 +21,10 @@ export async function bindTwilioReservation(id:string,operatorId:string,to:strin
     const account=await lockBillingAccount(client,reservation.accountId);
     if(account.mode!=='live' || account.blocked || account.subscriptionStatus!=='active' || !account.paidUntil || new Date(account.paidUntil).getTime()<=Date.now())
       throw new BillingError('Calling access is paused.',403);
+    const quote=(await client.query(`SELECT q.offer_id AS "offerId" FROM veilcall_call_reservations r
+      JOIN veilcall_prepaid_quotes q ON q.id=r.quote_id WHERE r.id=$1 AND q.account_id=r.account_id`,[id])).rows[0];
+    if(!quote?.offerId)throw new BillingError('An approved live offer is required.',403);
+    await assertLiveAdmission(client,operatorId,from,quote.offerId);
     const result=await client.query(`UPDATE veilcall_call_reservations r SET status='active',call_sid=$2
       WHERE r.id=$1 AND r.status='reserved' AND r.expires_at>now() AND r.rate_accepted_at IS NOT NULL
         AND r.rate_acceptance_version='prepaid-live-v1' AND EXISTS (
@@ -46,6 +51,10 @@ export async function claimTwilioSettlements(parentSid?:string):Promise<TwilioSe
         AND ($1::text IS NULL OR j.parent_sid=$1) ORDER BY j.next_attempt_at,j.reservation_id LIMIT 3 FOR UPDATE SKIP LOCKED`,[parentSid??null]);
     const jobs:TwilioSettlementJob[]=[];
     for(const row of rows.rows){
+      if(row.attempts>=12){
+        await client.query(`UPDATE veilcall_twilio_settlements SET state='review',reason='attempts-exhausted',lease_token=NULL,lease_until=NULL,revision=revision+1,updated_at=now() WHERE reservation_id=$1`,[row.id]);
+        continue;
+      }
       const lease=randomUUID();
       await client.query(`UPDATE veilcall_twilio_settlements SET lease_token=$2,lease_until=now()+interval '90 seconds',attempts=attempts+1,revision=revision+1,updated_at=now()
         WHERE reservation_id=$1`,[row.id,lease]);

@@ -15,7 +15,7 @@ export async function GET() {
   if (!(await isApprovedOperator(userId))) return voiceJson({ error: "This user is not an approved operator." }, 403);
 
   try {
-    requireRealCallingAccess(userId);
+    await requireRealCallingAccess(userId);
     const config = getVoiceConfig();
     if (!(await operatorCallerIds(userId)).length) return voiceJson({error:"Set up an approved calling number first."},403);
     const token = new twilio.jwt.AccessToken(config.accountSid, config.apiKeySid, config.apiKeySecret, {

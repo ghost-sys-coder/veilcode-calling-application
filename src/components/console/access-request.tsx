@@ -21,7 +21,7 @@ export function AccessRequest({profileReady,onApproved}:{profileReady:boolean;on
     <p>{access?.status==="approved" ? "Your workspace is available. Paid calling will open after the pilot's billing and number setup are ready." : "Account access and number approval are reviewed separately by the application owner."}</p>
     {access?.reviewNote && <p>{access.reviewNote}</p>}{error && <p role="alert">{error}</p>}
     {!loading && (!access || access.status==="rejected") && <Button type="button" disabled={!profileReady || busy} onClick={()=>void submit()}>{busy ? "Submitting…" : "Request account access"}</Button>}
-    {!profileReady && !access && <p>Save your business details first.</p>}
+    {!profileReady && !access && <p>Save your profile details first.</p>}
     {access?.status==="approved" && <Button asChild variant="outline"><Link href="/console/billing">Open your workspace</Link></Button>}
     <Button type="button" variant="ghost" disabled={loading || busy} onClick={()=>void load().catch(error=>setError((error as Error).message))}>Refresh access status</Button>
   </AlertDescription></Alert>;

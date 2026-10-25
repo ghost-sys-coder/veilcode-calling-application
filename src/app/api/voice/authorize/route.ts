@@ -8,6 +8,9 @@ import { getVoiceConfig } from "@/lib/voice-config";
 import { isSameOrigin, voiceJson } from "@/lib/voice-responses";
 import { requireRealCallingAccess } from "@/lib/billing-call-access";
 import { BillingError } from "@/lib/billing-config";
+import {isApprovedOperator as legacyOperator} from '@/lib/access';
+import {numberBody} from '@/lib/number-access';
+import {reserveLiveQuote} from '@/lib/live-calling-store';
 
 export const runtime = "nodejs";
 
@@ -20,11 +23,12 @@ export async function POST(request: Request) {
     return voiceJson({ error: "Expected JSON." }, 415);
   }
   let body: unknown;
-  try { body = await request.json(); } catch { return voiceJson({ error: "Invalid request." }, 400); }
+  try { body = await numberBody(request); } catch { return voiceJson({ error: "Invalid request or request too large." }, 400); }
+  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['to','from','quoteId','consent'].includes(key)))return voiceJson({error:'Invalid call authorization fields.'},400);
   const destination = validateCallingDestination((body as { to?: unknown } | null)?.to);
   if (!destination) return voiceJson({ error: "Enter a valid US, Canadian, UK, or Australian number in international format." }, 400);
   try {
-    requireRealCallingAccess(userId);
+    await requireRealCallingAccess(userId);
     const config = getVoiceConfig();
     const callerIds = await operatorCallerIds(userId);
     const requestedCallerId = (body as { from?: unknown } | null)?.from;
@@ -33,8 +37,10 @@ export async function POST(request: Request) {
     if (!isApprovedCallerId(callerId, callerIds)) {
       return voiceJson({ error: "Select an approved calling number." }, 403);
     }
+    const input=body as {quoteId?:unknown;consent?:unknown};
+    const reservationId=legacyOperator(userId)?undefined:await reserveLiveQuote(userId,typeof input.quoteId==='string'?input.quoteId:'',destination,callerId,input.consent);
     return voiceJson({
-      ticket: signCallTicket(userId, destination, callerId, config.signingSecret),
+      ticket: signCallTicket(userId, destination, callerId, config.signingSecret,reservationId),
       destination, callerId,
     });
   } catch(error) {

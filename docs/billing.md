@@ -1,9 +1,11 @@
 # Stripe configuration and payment proposal
 
-Updated 25 October 2026. Environment selection is implemented. An owner-only
+Updated 25 October 2026. See the current [paid-pilot release controls](paid-pilot-release.md)
+for approved $19/month and $10/$25/$50 top-ups, versioned policies and gated real
+calling. Call rates and business contact details remain pending; live commerce is closed.
+The historical planning below explains the original proposal. Environment selection is implemented. An owner-only
 [billing sandbox and customer approval workflow](billing-pilot.md) is now built.
-The commercial pricing and live-launch steps below remain proposals; live payments
-and paid calling are disabled.
+Live activation remains a separate explicit owner action.
 
 ## Implemented environment selection
 

@@ -3,15 +3,15 @@ import { Dialer } from "@/components/console/dialer";
 import type { CallerIdOption } from "@/lib/caller-id-types";
 import type { Contact } from "@/lib/contact-types";
 
-export function CallWorkspace({ configured, setupIssues, callerIds, recordingEnabled = false, reviewEnabled = false, initialContact, contactError }: {
+export function CallWorkspace({ configured, setupIssues, callerIds, recordingEnabled = false, reviewEnabled = false, initialContact, contactError,paid=false }: {
   configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[]; recordingEnabled?:boolean; reviewEnabled?:boolean;
-  initialContact?:Pick<Contact,"id"|"name"|"phone"|"country">; contactError?:string;
+  initialContact?:Pick<Contact,"id"|"name"|"phone"|"country">; contactError?:string;paid?:boolean;
 }) {
   return <div className="dialer-page">
     <div className="shell dialer-title-row">
       <div><p className="dialer-eyebrow"><span className="dialer-blink" /> VEILCALL / VOICE TERMINAL 001</p>
       <h1>Good conversations <em>start here.</em></h1>
-      <p>Call contacts in the US, Canada, UK, and Australia using one of your approved calling numbers.</p></div>
+      <p>{paid?'Call approved UK and Australia routes with a price quote before each call.':'Call contacts using one of your approved calling numbers. UK and Australia calling has been verified; other routes depend on account permissions.'}</p></div>
       <div className="dialer-title-mark"><Signal size={22}/><span>UGANDA <ArrowUpRight size={16}/> US / CANADA / UK / AU</span></div>
     </div>
     {contactError && <p className="shell review-message" role="alert">{contactError}</p>}
@@ -26,7 +26,7 @@ export function CallWorkspace({ configured, setupIssues, callerIds, recordingEna
         <div className="dialer-aside-fact"><Zap size={18}/><span><strong>US, Canada, UK &amp; Australia</strong>Validated before calling</span></div>
         <span className="dialer-aside-foot">BUILT BY VEILCODE STUDIO <ArrowUpRight size={15}/></span>
       </aside>
-      <Dialer key={initialContact?.id ?? "manual"} configured={configured} setupIssues={setupIssues} callerIds={callerIds} recordingEnabled={recordingEnabled} reviewEnabled={reviewEnabled} initialContact={initialContact}/>
+      <Dialer key={initialContact?.id ?? "manual"} paid={paid} configured={configured} setupIssues={setupIssues} callerIds={callerIds} recordingEnabled={recordingEnabled} reviewEnabled={reviewEnabled} initialContact={initialContact}/>
     </div>
     <div className="shell dialer-footnote">Use the service only for lawful outreach. Recipient consent, telemarketing rules, and Twilio charges remain your responsibility.</div>
   </div>;

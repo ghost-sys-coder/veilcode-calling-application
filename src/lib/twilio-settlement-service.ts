@@ -9,8 +9,8 @@ import {fetchTwilioSettlement} from '@/lib/twilio-settlement-provider';
 import {SettlementEvidenceError} from '@/lib/twilio-settlement-proof';
 import {bindTwilioReservation,claimTwilioSettlements,finishTwilioSettlement,deferTwilioSettlement,type TwilioSettlementJob} from '@/lib/twilio-settlement-store';
 
-// No API exposes admission yet. The hard-coded release boundary remains false;
-// neither an environment variable nor a test wallet can activate this path.
+// Signed TwiML admission consumes a live-only persisted permit. The release
+// switch alone cannot grant access without the activated offer and paid account.
 export async function preparePrepaidTwilioCall(id:string,operatorId:string,to:string,from:string,parentSid:string):Promise<string> {
   if(!liveBillingEnabled())throw new BillingError('Paid calling is not available yet.',402);
   if(!(await operatorCallerIds(operatorId)).some(caller=>caller.number===from))throw new BillingError('Select one of your own active calling numbers.',403);

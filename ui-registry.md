@@ -1,5 +1,25 @@
 # VeilCall UI patterns
 
+## Paid pilot setup and agreements
+
+Files: `pilot-setup.tsx`, `policy-agreement.tsx`, `paid-call-status.tsx` and the
+paid quote in `dialer.tsx`. Updated 25 October 2026.
+
+| Property | Pattern |
+| --- | --- |
+| Background | Existing opaque shadcn `bg-card` panels and `bg-background` dialogs |
+| Border / radius | Theme `--border`; existing `rounded-lg` dialog and Card corners |
+| Text | Theme foreground; `--muted-foreground` descriptions; 13px form copy, line-height 1.65 |
+| Spacing | 20px form section gaps; 14px field gaps; 7px label spacing; shared shadcn insets |
+| States | Shared primary/outline Button, existing focus rings and disabled state |
+| Consent | Unchecked shadcn Checkbox with Label; policy and immediate-start choices separate |
+| Status | Shadcn Alert with text, never color alone; passive hold/settlement updates |
+
+Keep owner controls inside the existing Billing page. Saved drafts, published
+offers and pending holds must be labeled explicitly. Quotes show USD rates and
+maximum charge without hiding fractional cents. Long owner forms scroll within
+the opaque shadcn dialog; actions wrap. The mobile dock remains unchanged.
+
 Use the existing shadcn components and shared warm editorial theme. Main surfaces use `--background`, panels `--card`, and dialogs `--popover`; text uses `--foreground` and supporting text `--muted-foreground`. Borders use `--border`, with the sidebar using `--sidebar-border`. Primary actions use `--primary` and destructive states `--destructive`.
 
 ## Business and number onboarding

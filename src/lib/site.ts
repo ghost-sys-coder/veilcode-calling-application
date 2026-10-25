@@ -3,6 +3,6 @@ export const siteConfig = {
   company: "VeilCode Studio",
   title: "VeilCall | A clearer way to connect",
   description:
-    "A dedicated browser calling workspace for U.S. business outreach. Designed for one consistent business identity, powered by Twilio when calling is enabled.",
+    "A browser calling workspace for conversations, follow-ups and private call review. UK and Australia routes are available when your account, number and calling setup are approved.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
 } as const;

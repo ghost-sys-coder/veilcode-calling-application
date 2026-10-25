@@ -11,6 +11,7 @@ import { getReview } from "@/lib/review-store";
 import { callSidPattern } from "@/lib/review-validation";
 import { callingCountries, normalizeDialingNumber } from "@/lib/calling-countries";
 import { operatorCallerIds } from "@/lib/operator-caller-ids";
+import {isApprovedOperator as legacyOperator} from '@/lib/access';
 
 export const metadata: Metadata = {
   title: "Private call console",
@@ -46,5 +47,8 @@ export default async function ConsolePage({ searchParams }: { searchParams:Promi
       initialContact={id:call.callSid,name:call.to,phone:call.to,country};
     } catch {contactError="This callback could not be loaded. Choose another follow-up or enter the number manually.";}
   }
-  return <CallWorkspace configured={status.ready} setupIssues={status.missing} callerIds={status.callerIds} reviewEnabled={reviewStorageConfigured()} recordingEnabled={reviewStorageConfigured() && process.env.VOICE_RECORDING_ENABLED === "true"} initialContact={initialContact} contactError={contactError}/>;
+  if(initialContact&&!legacyOperator(userId)&&!['GB','AU'].includes(initialContact.country)){
+    initialContact=undefined;contactError='The paid pilot supports quoted UK/Australia routes. Choose a supported destination.';
+  }
+  return <CallWorkspace paid={!legacyOperator(userId)} configured={status.ready} setupIssues={status.missing} callerIds={status.callerIds} reviewEnabled={reviewStorageConfigured()} recordingEnabled={reviewStorageConfigured() && process.env.VOICE_RECORDING_ENABLED === "true"} initialContact={initialContact} contactError={contactError}/>;
 }

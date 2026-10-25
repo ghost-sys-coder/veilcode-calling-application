@@ -12,6 +12,7 @@ export interface BillingAccount {
 export interface BillingOrder {
   id:string; accountId:string; kind:"subscription"|"topup"; amountCents:number; priceId:string|null;
   status:string; checkoutId:string|null; checkoutUrl:string|null; paymentIntentId:string|null;
+  offerId?:string|null;
 }
 export interface BillingRate {route:string; rateMicro:number; feeMicro:number; mode:BillingMode}
 export interface CallReservation extends BillingRate {
@@ -23,4 +24,6 @@ export interface BillingSummary {
   account:Pick<BillingAccount,"subscriptionStatus"|"paidUntil"|"balanceMicro"|"heldMicro"|"blocked">;
   monthlyCents:number|null; topups:number[];
   transactions:{id:string;kind:string;amountMicro:number;description:string;createdAt:string}[];
+  portalAvailable?:boolean;eligibilityMessage?:string;
+  offer?:{id:string;policies:{terms:string;privacy:string;recording:string;credit:string;revision:string};accepted:boolean;serviceReady:boolean}|null;
 }

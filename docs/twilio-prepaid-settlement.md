@@ -1,4 +1,9 @@
-# Twilio prepaid settlement stage
+# Twilio prepaid settlement
+
+The subsequent [paid-pilot release](paid-pilot-release.md) now connects this layer
+to signed live admission behind an owner-activated offer and a default-closed
+Production switch. Descriptions below of the unconnected/hard-coded admission
+boundary describe the earlier staged release, not the current implementation.
 
 This adds the real-provider verification and recovery layer after the deterministic
 [prepaid dialing tests](prepaid-dialing-tests.md). It does **not** enable live

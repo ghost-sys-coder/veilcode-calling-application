@@ -17,9 +17,14 @@ import type { CallerIdOption } from "@/lib/caller-id-types";
 import { callingCountries, normalizeDialingNumber, type DialingCountry } from "@/lib/calling-countries";
 import type { VoiceOutcome } from "@/lib/voice-outcome";
 import type { Contact } from "@/lib/contact-types";
+import type {LiveQuote} from '@/lib/live-calling-store';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from '@/components/ui/dialog';
+import {Checkbox} from '@/components/ui/checkbox';
+import {PaidCallStatus} from '@/components/console/paid-call-status';
 
 type CallState = "idle" | "preparing" | "dialing" | "connected" | "ended" | "error";
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "0", "⌫"] as const;
+const callMoney=(micro:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:6}).format(micro/1000000);
 const stateLabel: Record<CallState, string> = {
   idle: "READY TO DIAL", preparing: "PREPARING CONNECTION", dialing: "CONNECTING CALL",
   connected: "VOICE SESSION ACTIVE", ended: "CALL FINISHED", error: "CONNECTION ERROR",
@@ -30,17 +35,17 @@ const stateLabel: Record<CallState, string> = {
 interface TokenResponse { token?: string; error?: string }
 interface AuthorizationResponse { ticket?: string; error?: string }
 
-export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, reviewEnabled, initialContact }: {
+export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, reviewEnabled, initialContact,paid=false }: {
   configured: boolean; setupIssues: string[]; callerIds: CallerIdOption[]; recordingEnabled:boolean; reviewEnabled:boolean;
-  initialContact?:Pick<Contact,"id"|"name"|"phone"|"country">;
+  initialContact?:Pick<Contact,"id"|"name"|"phone"|"country">;paid?:boolean;
 }) {
   const router=useRouter();
   const [callerId, setCallerId] = useState(callerIds[0]?.number ?? "");
   const selectedCaller = callerIds.find((item) => item.number === callerId) ?? callerIds[0];
   const fromNumber = selectedCaller?.number ?? "";
-  const [country, setCountry] = useState<DialingCountry>(initialContact?.country ?? "US");
+  const [country, setCountry] = useState<DialingCountry>(initialContact?.country ?? (paid?'GB':'US'));
   const selectedCountry = callingCountries.find((item) => item.code === country)!;
-  const [phone, setPhone] = useState<string>(initialContact?.phone ?? callingCountries[0].prefix);
+  const [phone, setPhone] = useState<string>(initialContact?.phone ?? (paid?'+44':callingCountries[0].prefix));
   const [callSid, setCallSid] = useState<string | null>(null);
   const [state, setState] = useState<CallState>("idle");
   const [message, setMessage] = useState("Enter the recipient's phone number to begin.");
@@ -51,6 +56,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
   const [wrapUpBusy,setWrapUpBusy]=useState(false);
   const [confirmNextCall,setConfirmNextCall]=useState(false);
   const [pendingNavigation,setPendingNavigation]=useState<string | null>(null);
+  const [paidQuote,setPaidQuote]=useState<LiveQuote|null>(null),[quoteAccepted,setQuoteAccepted]=useState(false);
   const sessionSid=useRef<string | null>(null);
   const callRef = useRef<Call | null>(null);
   const deviceRef = useRef<TwilioDevice | null>(null);
@@ -172,7 +178,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
     }
   }
 
-  async function dial(discardDraft=false) {
+  async function dial(discardDraft=false,acceptedQuote?:LiveQuote) {
     if (!configured || busyRef.current || wrapUpBusy) return;
     if (wrapUpDirty && !discardDraft) {setConfirmNextCall(true);return;}
     if (!fromNumber) {
@@ -199,6 +205,13 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
     setElapsed(0);
     setCallSid(null);
     try {
+      if(paid&&!acceptedQuote){
+        const response=await fetch('/api/voice/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:destination,from:fromNumber})});
+        const quote=await response.json();if(operation!==operationRef.current)return;
+        if(!response.ok)throw new Error(quote.error||'This route is not available.');
+        setPaidQuote(quote);setQuoteAccepted(false);setState('idle');busyRef.current=false;setMessage('Review the rate and maximum charge before placing this call.');return;
+      }
+      if(acceptedQuote&&(acceptedQuote.to!==destination||acceptedQuote.from!==fromNumber||Date.parse(acceptedQuote.expiresAt)<=Date.now()))throw new Error('This rate quote expired or the number changed. Preview a new rate.');
       // Get browser microphone permission before minting the 45-second dial permit.
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error("Microphone access requires HTTPS or localhost and a compatible browser.");
@@ -209,7 +222,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
       const authorizationResponse = await fetch("/api/voice/authorize", {
         method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: destination, from: fromNumber }),
+        body: JSON.stringify({ to: destination, from: fromNumber,...(acceptedQuote?{quoteId:acceptedQuote.id,consent:true}:{}) }),
       });
       const authorization = await authorizationResponse.json() as AuthorizationResponse;
       if (operation !== operationRef.current) return;
@@ -323,6 +336,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
   const seconds = String(elapsed % 60).padStart(2, "0");
 
   return <div className="dialer-column">
+    {paid&&<PaidCallStatus refreshKey={`${state}:${callSid??''}`}/>}
     {finishedCall && reviewEnabled && <CallWrapUpPanel key={finishedCall} callSid={finishedCall} onDirtyChange={setWrapUpDirty} onBusyChange={setWrapUpBusy}/>}
     <section className="dialer-terminal" aria-labelledby="dialer-title">
     <div className="terminal-topbar"><span><span className="terminal-light"/> VEILCALL / TERMINAL</span><span>SESSION 001 <span className="terminal-divider">/</span> SECURE</span></div>
@@ -331,7 +345,7 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
         <span className={`terminal-state terminal-state-${state}`}><span className="terminal-status-dot" />{configured ? stateLabel[state] : "SETUP REQUIRED"}</span>
       </div>
       <CallerIdSelector callerIds={callerIds} value={fromNumber} disabled={!configured || isBusy} onChange={changeCallerId} />
-      <CountrySelector country={country} disabled={!configured || isBusy} onChange={changeCountry} />
+      <CountrySelector paid={paid} country={country} disabled={!configured || isBusy} onChange={changeCountry} />
       {initialContact && phone === initialContact.phone && country === initialContact.country && <p className="dialer-contact-name">Ready to call <strong>{initialContact.name}</strong>. Press Place call when you’re ready.</p>}
       <div className="terminal-number-caption">RECIPIENT PHONE NUMBER <span>{selectedCountry.prefix}</span></div>
       <Label className="terminal-number-field"><Phone size={23} strokeWidth={1.6}/><Input
@@ -363,6 +377,12 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
     </div>
     <div className="terminal-bottom"><span>ENCRYPTED SIGNALING VIA TWILIO</span><span>MICROPHONE ACCESS REQUIRED</span></div>
   </section>
+    <Dialog open={paidQuote!==null} onOpenChange={open=>{if(!open)setPaidQuote(null);}}><DialogContent><DialogHeader><DialogTitle>Confirm this call</DialogTitle><DialogDescription>USD · {paidQuote?.from} to {paidQuote?.to}</DialogDescription></DialogHeader>{paidQuote&&<>
+      <p>{paidQuote.route.replaceAll('_',' ')} · {callMoney(paidQuote.rateMicro)} per connected minute, rounded up, plus {callMoney(paidQuote.feeMicro)} per attempt, including unanswered attempts.</p>
+      <p>Reserve up to {callMoney(paidQuote.heldMicro)} for at most {paidQuote.maxSeconds/60} connected minutes. Unused credit is released after provider reconciliation. Quote expires at {new Date(paidQuote.expiresAt).toLocaleTimeString()}.</p>
+      <Label className="billing-consent"><Checkbox checked={quoteAccepted} onCheckedChange={value=>setQuoteAccepted(value===true)}/>I accept this rate, attempt fee and maximum charge.</Label>
+      <DialogFooter><Button variant="outline" onClick={()=>setPaidQuote(null)}>Cancel</Button><Button disabled={!quoteAccepted} onClick={()=>{const quote=paidQuote;setPaidQuote(null);void dial(true,quote);}}>Accept and call</Button></DialogFooter>
+    </>}</DialogContent></Dialog>
     <AlertDialog open={confirmNextCall} onOpenChange={setConfirmNextCall}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Start the next call?</AlertDialogTitle><AlertDialogDescription>Your current call review has unsaved changes. Discard them to place the next call, or keep editing and save first.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep editing</AlertDialogCancel><Button type="button" disabled={wrapUpBusy} onClick={()=>{setConfirmNextCall(false);void dial(true);}}>Discard and call</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <AlertDialog open={pendingNavigation!==null} onOpenChange={open=>{if (!open) setPendingNavigation(null);}}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{isBusy ? "Leave this call?" : wrapUpBusy ? "Call review is busy" : "Leave this call review?"}</AlertDialogTitle><AlertDialogDescription>{isBusy ? "Leaving the dialer ends the current call. Stay on the call, or end it before opening another section." : wrapUpBusy ? "Wait for the current request to finish before leaving." : "Your changes have not been saved. Stay here to save them, or discard the draft and leave."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{isBusy ? "Stay on call" : "Stay here"}</AlertDialogCancel><Button type="button" disabled={wrapUpBusy} onClick={()=>{const href=pendingNavigation;setPendingNavigation(null);setWrapUpDirty(false);if (isBusy) hangUp();if (href) router.push(href);}}>{isBusy ? "End call and leave" : "Discard and leave"}</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;

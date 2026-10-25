@@ -272,7 +272,8 @@ const voiceConfig = {
 function authorizeRoute({ userId = "user_operator", approved = true, callers = approvedCallers } = {}) {
   const route = loadModule("../src/app/api/voice/authorize/route.ts", {
     "@clerk/nextjs/server": { auth: async () => ({ userId }) },
-    "@/lib/access": { operatorHasAccess: () => approved },
+    "@/lib/access": { operatorHasAccess: () => approved,isApprovedOperator:()=>true },
+    "@/lib/number-access":{numberBody:request=>request.json()},"@/lib/live-calling-store":{},
     "@/lib/call-ticket": ticketModule,
     "@/lib/caller-ids": callerIdsModule,
     "@/lib/billing-call-access": {requireRealCallingAccess:()=>{}}, "@/lib/billing-config": {BillingError:class extends Error{}},
@@ -320,13 +321,15 @@ test("call authorization refuses globally configured caller IDs outside the oper
   assert.equal((await authorizeRoute({callers:[]})({to:"+442079460123"})).status,403);
 });
 
+const voiceFormModule=loadModule('../src/lib/voice-webhook.ts',{'server-only':{},'@/lib/voice-service':{}});
 function webhookRoute(config = voiceConfig, approved = true) {
   const route = loadModule("../src/app/api/voice/twiml/route.ts", {
     "@/lib/call-ticket": ticketModule,
     "@/lib/caller-ids": callerIdsModule,
     "@/lib/billing-call-access": {requireRealCallingAccess:()=>{}}, "@/lib/billing-config": {BillingError:class extends Error{}},
     "@/lib/operator-caller-ids": {operatorCallerIds:async()=>config.callerIds},
-    "@/lib/access": {operatorHasAccess:()=>approved},
+    "@/lib/access": {operatorHasAccess:()=>approved,isApprovedOperator:()=>true},
+    "@/lib/voice-webhook":voiceFormModule,"@/lib/twilio-settlement-service":{},
     "@/lib/destination": { validateCallingDestination: (value) => value === "+442079460123" ? value : null },
     "@/lib/voice-config": { getVoiceConfig: () => config },
     "@/lib/review-call-tracking": { trackCall:async () => false },

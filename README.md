@@ -146,6 +146,12 @@ Supported countries in this application still require permission from Twilio. En
 
 ## Checks
 
+Current paid-pilot configuration and guarded real calling are documented in
+[Paid pilot release](docs/paid-pilot-release.md). Existing legacy owner permits
+retain their original behavior; paid customer calls use persisted one-use credit
+reservations and provider duration limits. Live commerce remains closed until
+the owner approves caller-specific rates and completes release setup.
+
 ```powershell
 npm run typecheck
 npm test

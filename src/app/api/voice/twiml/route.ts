@@ -7,6 +7,10 @@ import { trackCall } from "@/lib/review-call-tracking";
 import { operatorCallerIds } from "@/lib/operator-caller-ids";
 import { operatorHasAccess as isApprovedOperator } from "@/lib/access";
 import { requireRealCallingAccess } from "@/lib/billing-call-access";
+import {isApprovedOperator as legacyOperator} from '@/lib/access';
+import {preparePrepaidTwilioCall} from '@/lib/twilio-settlement-service';
+import {readVoiceForm} from '@/lib/voice-webhook';
+import {BillingError} from '@/lib/billing-config';
 
 export const runtime = "nodejs";
 
@@ -18,12 +22,8 @@ export async function POST(request: Request) {
   if (!request.headers.get("content-type")?.includes("application/x-www-form-urlencoded")) {
     return new Response("Unsupported media type", { status: 415 });
   }
-  const form = await request.formData();
-  const params: Record<string, string> = {};
-  for (const [key, value] of form.entries()) {
-    if (typeof value !== "string" || key in params) return new Response("Invalid input", { status: 400 });
-    params[key] = value;
-  }
+  const params=await readVoiceForm(request);
+  if(!params)return new Response('Invalid input',{status:400});
   const signature = request.headers.get("X-Twilio-Signature") ?? "";
   // Webhook URL must exactly match the HTTPS Voice URL configured on the TwiML App.
   if (!twilio.validateRequest(config.authToken, signature, config.webhookUrl, params)) {
@@ -41,9 +41,15 @@ export async function POST(request: Request) {
     return new Response("Call permission expired or invalid", { status: 403 });
   }
   try {
-    requireRealCallingAccess(ticket.sub);
+    await requireRealCallingAccess(ticket.sub);
     if (!isApprovedCallerId(ticket.from,await operatorCallerIds(ticket.sub))) return new Response("Calling number unavailable",{status:403});
-  } catch {return new Response("Calling number unavailable",{status:503});}
+    if(!legacyOperator(ticket.sub)){
+      if(!ticket.reservationId)return new Response('Accepted prepaid permit required',{status:403});
+      if(!await trackCall(params.CallSid??'',ticket.sub,ticket.to,ticket.from))return new Response('Call tracking unavailable',{status:503});
+      const xml=await preparePrepaidTwilioCall(ticket.reservationId,ticket.sub,ticket.to,ticket.from,params.CallSid??'');
+      return new Response(xml,{headers:{'Content-Type':'text/xml; charset=utf-8','Cache-Control':'no-store'}});
+    }
+  } catch(error) {return new Response("Call permission or calling number unavailable",{status:error instanceof BillingError?error.status:503});}
   const response = new twilio.twiml.VoiceResponse();
   const tracked = await trackCall(params.CallSid ?? "",ticket.sub,ticket.to,ticket.from);
   const dial = response.dial({ callerId: ticket.from, answerOnBridge: true, timeout: 30 });

@@ -1,6 +1,10 @@
 # Customer approval and billing sandbox
 
-Updated 25 October 2026. Commercial pricing is still a proposal. This release
+Updated 25 October 2026. This document records the isolated sandbox stage.
+The current [paid-pilot release controls](paid-pilot-release.md) add versioned
+offers, policies and real prepaid admission behind closed launch gates. The owner
+has approved $19/month and $10/$25/$50 top-ups; calling rates remain pending.
+This earlier release
 adds the owner-reviewed customer workspace and a test-only payment integration.
 It does not open paid calling or accept live payments.
 
