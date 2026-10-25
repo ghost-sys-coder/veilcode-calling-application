@@ -17,6 +17,19 @@ const access=loadModule('../src/lib/customer-access.ts',{'server-only':{},'@/lib
 const billing=loadModule('../src/lib/billing-store.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/customer-access':access,'@/lib/billing-config':config,'@/lib/billing-rates':rates});
 const evidence=loadModule('../src/lib/twilio-settlement-proof.ts',{'server-only':{}});
 const store=loadModule('../src/lib/twilio-settlement-store.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/customer-access':access,'@/lib/billing-config':config,'@/lib/billing-store':billing,'@/lib/twilio-settlement-proof':evidence});
+const review=loadModule('../src/lib/settlement-review-store.ts',{'server-only':{},'@/lib/review-db':{reviewDatabase:()=>database},'@/lib/customer-access':access,'@/lib/billing-config':config,'@/lib/twilio-settlement-store':store});
+let providerPending=false,providerReads=0;
+const service=loadModule('../src/lib/twilio-settlement-service.ts',{'server-only':{},'@/lib/billing-config':config,'@/lib/operator-caller-ids':{},'@/lib/voice-service':{},
+  '@/lib/billing-store':billing,'@/lib/prepaid-rules':{},'@/lib/twilio-settlement-proof':evidence,'@/lib/twilio-settlement-store':store,
+  '@/lib/twilio-settlement-provider':{fetchTwilioSettlement:async(reservation,account)=>{
+    providerReads++;if(providerPending)throw new evidence.SettlementEvidenceError('provider-pending');
+    const proof={source:'twilio-api',accountSid:account,
+      parent:{sid:reservation.callSid,accountSid:account,parentCallSid:null,from:`client:${reservation.operatorId}`,to:'',direction:'inbound',status:'completed',duration:'96'},
+      child:{sid:'CA'+randomBytes(16).toString('hex'),accountSid:account,parentCallSid:reservation.callSid,from:reservation.from,to:reservation.to,direction:'outbound-dial',status:'completed',duration:'61'}};
+    return {seconds:evidence.twilioSettlementSeconds(reservation,account,proof),proof};
+  }},
+});
+const worker=loadModule('../src/lib/settlement-worker.ts',{'server-only':{},'@/lib/twilio-settlement-service':service,'@/lib/settlement-review-store':review,'@/lib/twilio-settlement-store':store});
 const tag=randomBytes(8).toString('hex'),user='settlement_'+tag,accountSid='AC'+'a'.repeat(32),from='+442079460123',to='+61293744000';
 const checks=[];let account;
 async function fixture(mode='live',accepted=true){
@@ -94,6 +107,33 @@ try{
   await billing.settleBillingReservation(exhausted.id,exhausted.sid,301,'CA'+'c'.repeat(32),{source:'rollback-only-fixture'});
   const overrun=await billing.getBillingAccount(user,'live');assert.equal(overrun.balanceMicro,690000);assert.equal(overrun.heldMicro,0);assert.equal(overrun.blocked,true);
   checks.push('Provider overruns never exceed the accepted hold and pause further spending');
+  console.log(JSON.stringify({stage:'ledger_verified'}));
+  const missed=await fixture();await bind(missed);
+  await query("UPDATE veilcall_twilio_settlements SET next_attempt_at=now()-interval '1 second' WHERE reservation_id=$1",[missed.id]);
+  const recoveredByWorker=await worker.runSettlementWorker();assert.equal(recoveredByWorker.settled,1);
+  assert.equal((await billing.getBillingAccount(user,'live')).balanceMicro,870000);assert.equal((await billing.getBillingAccount(user,'live')).heldMicro,0);
+  assert.ok((await review.settlementReport()).lastAutomaticCheck);
+  checks.push('The worker settles an abandoned call with no callback or browser, and records its automatic check');
+  const needsReview=await fixture();await bind(needsReview);await store.deferTwilioSettlement(await claim(needsReview),'provider-mismatch',true);
+  const beforeReview=await queue(needsReview.id);
+  const recheck={id:needsReview.id,revision:beforeReview.revision,note:'Provider account verified after investigation.'};
+  // A failed audit insert must roll back the queue transition as well.
+  await assert.rejects(review.recheckSettlement('fixture_owner',{...recheck,note:'bad'}),error=>error.code==='23514');
+  assert.equal((await queue(needsReview.id)).state,'review');assert.equal((await queue(needsReview.id)).revision,beforeReview.revision);
+  await review.recheckSettlement('fixture_owner',recheck);
+  await assert.rejects(review.recheckSettlement('other_owner',recheck),error=>error.status===409);
+  const audit=await query('SELECT actor_id,note,previous_reason FROM veilcall_settlement_audit WHERE reservation_id=$1',[needsReview.id]);
+  assert.equal(audit.rows.length,1);assert.equal(audit.rows[0].actor_id,'fixture_owner');assert.equal(audit.rows[0].previous_reason,'provider-mismatch');
+  assert.equal((await billing.getBillingAccount(user,'live')).heldMicro,310000);
+  assert.equal((await worker.runSettlementWorker()).settled,1);assert.equal((await billing.getBillingAccount(user,'live')).heldMicro,0);
+  checks.push('Owner rechecks are audited atomically; stale/concurrent actions cannot recheck twice or release credit without evidence');
+  const waiting=await fixture();await bind(waiting);providerPending=true;
+  await query('UPDATE veilcall_twilio_settlements SET next_attempt_at=now(),attempts=11 WHERE reservation_id=$1',[waiting.id]);
+  assert.equal((await worker.runSettlementWorker()).pending,1);assert.equal((await queue(waiting.id)).state,'review');
+  assert.equal((await billing.getBillingAccount(user,'live')).heldMicro,310000);
+  const report=await review.settlementReport();assert.ok(report.items.every(item=>item.destination.startsWith('•••• ')));assert.ok(report.items.every(item=>!item.destination.includes(to)));
+  assert.ok(providerReads>=3);
+  checks.push('Incomplete provider records keep the hold and surface a masked review item after retries are exhausted');
   const status=await store.twilioSettlementStatus();assert.ok(status.review>=2);assert.ok(status.done>=1);
   await query('ROLLBACK');console.log(JSON.stringify({passed:true,checks,rollback:true}));
 }catch{

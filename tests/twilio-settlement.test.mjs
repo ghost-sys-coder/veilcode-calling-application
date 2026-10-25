@@ -60,14 +60,14 @@ test('missing, multiple and foreign child records cannot turn into a guessed cha
     const failed=providerFixture({fail:true});await assert.rejects(failed.provider.fetchTwilioSettlement(reservation,account),error=>error.reason==='provider-unavailable'&&!error.message.includes('private'));
   }finally{if(original===undefined)delete process.env.TWILIO_ACCOUNT_SID;else process.env.TWILIO_ACCOUNT_SID=original;}
 });
-function serviceFixture({enabled=false,failure,settled=false,caller=reservation.from,markFail=false}={}){
+function serviceFixture({enabled=false,failure,settled=false,caller=reservation.from,markFail=false,deferFail=false}={}){
   const calls=[];const job={reservation:{...reservation,status:settled?'settled':'active'},accountSid:account,lease:id,attempts:1};
   const service=loadModule('../src/lib/twilio-settlement-service.ts',{'server-only':{},'@/lib/billing-config':{...config,liveBillingEnabled:()=>enabled},
     '@/lib/operator-caller-ids':{operatorCallerIds:async()=>[{number:caller}]},'@/lib/voice-service':{voiceWebhookUrl:path=>'https://app.test'+path},
     '@/lib/billing-store':{settleBillingReservation:async(...args)=>calls.push(['settle',...args])},'@/lib/prepaid-rules':rules,'@/lib/twilio-settlement-proof':evidence,
     '@/lib/twilio-settlement-provider':{fetchTwilioSettlement:async()=>{calls.push(['fetch']);if(failure)throw failure;return {seconds:61,proof:proof()};}},
     '@/lib/twilio-settlement-store':{bindTwilioReservation:async()=>{calls.push(['bind']);return reservation;},claimTwilioSettlements:async()=>[job],
-      finishTwilioSettlement:async()=>{calls.push(['done']);if(markFail)throw new Error('interrupted');},deferTwilioSettlement:async(...args)=>calls.push(['defer',...args])},
+      finishTwilioSettlement:async()=>{calls.push(['done']);if(markFail)throw new Error('interrupted');},deferTwilioSettlement:async(...args)=>{calls.push(['defer',...args]);if(deferFail)throw new Error('storage unavailable');}},
   });return {service,calls};
 }
 test('the shipped live-admission boundary blocks before caller, permit or Twilio access',async()=>{
@@ -92,6 +92,10 @@ test('provider failures retain holds and quarantine mismatches rather than settl
     assert.equal(fixture.calls.some(call=>call[0]==='settle'),false);assert.equal(fixture.calls.at(-1)[2],reason);assert.equal(fixture.calls.at(-1)[3],review);
   }
 });
+test('a failed retry write fails the worker instead of recording a successful recovery pass',async()=>{
+  const fixture=serviceFixture({failure:new evidence.SettlementEvidenceError('provider-pending'),deferFail:true});
+  await assert.rejects(fixture.service.reconcileTwilioSettlements(),/storage is temporarily unavailable/);
+});
 function callbackFixture(params){
   const wakes=[],after=[];let reconciled=0;
   const route=loadModule('../src/app/api/voice/prepaid/callback/route.ts',{'next/server':{after:callback=>after.push(callback)},
@@ -114,7 +118,7 @@ test('owner recovery rejects other users and browser-supplied settlement fields'
   for(const denied of [401,403,0]){
     let runs=0;
     const route=loadModule('../src/app/api/admin/call-settlements/route.ts',{'@/lib/number-access':{numberOperator:async()=>denied?Response.json({}, {status:denied}):{userId:'owner'}},
-      '@/lib/twilio-settlement-store':{twilioSettlementStatus:async()=>({pending:0,due:0,review:0,done:0})},
+      '@/lib/settlement-review-store':{settlementReport:async()=>({pending:0,due:0,review:0,done:0})},'@/lib/billing-config':config,
       '@/lib/twilio-settlement-service':{reconcileTwilioSettlements:async()=>{runs++;return {processed:0,settled:0,pending:0};}},'@/lib/voice-responses':{voiceJson:(value,status=200)=>Response.json(value,{status})}});
     assert.equal((await route.GET()).status,denied||200);
     assert.equal((await route.POST(new Request('https://app.test',{method:'POST',body:'{"seconds":0}'}))).status,denied||400);assert.equal(runs,0);

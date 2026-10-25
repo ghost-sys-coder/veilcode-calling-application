@@ -36,7 +36,8 @@ test("scheduler identity is bound to this repository, workflow, branch, event an
   const repo="ghost-sys-coder/veilcode-calling-application";
   const valid={repository_id:"1414889716",repository_owner_id:"84653892",repository:repo,ref:"refs/heads/master",sub:`repo:${repo}:ref:refs/heads/master`,workflow_ref:`${repo}/.github/workflows/callback-email-reminders.yml@refs/heads/master`,event_name:"schedule"};
   let payload=valid,throws=false,verifications=0;
-  const auth=loadModule("../src/lib/email-dispatch-auth.ts",{"server-only":{},jose:{createRemoteJWKSet:()=>({}),jwtVerify:async(token,keys,options)=>{verifications++;assert.equal(options.issuer,"https://token.actions.githubusercontent.com");assert.equal(options.audience,"https://call.veilcode.studio/callback-email-dispatch");assert.deepEqual(options.algorithms,["RS256"]);assert.equal(options.maxTokenAge,"10m");assert.ok(options.requiredClaims.includes("exp"));if(throws)throw new Error("bad signature");return {payload};}}});
+  const scheduler=loadModule("../src/lib/github-scheduler-auth.ts",{"server-only":{},jose:{createRemoteJWKSet:()=>({}),jwtVerify:async(token,keys,options)=>{verifications++;assert.equal(options.issuer,"https://token.actions.githubusercontent.com");assert.equal(options.audience,"https://call.veilcode.studio/callback-email-dispatch");assert.deepEqual(options.algorithms,["RS256"]);assert.equal(options.maxTokenAge,"10m");assert.ok(options.requiredClaims.includes("exp"));if(throws)throw new Error("bad signature");return {payload};}}});
+  const auth=loadModule("../src/lib/email-dispatch-auth.ts",{"server-only":{},"@/lib/github-scheduler-auth":scheduler});
   const req=(value)=>new Request("https://app.test/dispatch",{headers:{Authorization:value}});
   try {
     for(const value of ["","Bearer undefined","Bearer malformed","Bearer "+"a".repeat(20001)])assert.equal(await auth.emailDispatchAuthorized(req(value)),false);

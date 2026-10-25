@@ -43,6 +43,7 @@ async function reconcile(job:TwilioSettlementJob):Promise<boolean> {
 // live call still owns a hold. This function never admits or creates a call.
 export async function reconcileTwilioSettlements(parentSid?:string) {
   const jobs=await claimTwilioSettlements(parentSid),results=await Promise.allSettled(jobs.map(reconcile));
+  if(results.some(result=>result.status==='rejected'))throw new Error('Settlement recovery storage is temporarily unavailable.');
   return {processed:jobs.length,settled:results.filter(result=>result.status==='fulfilled'&&result.value).length,
     pending:results.filter(result=>result.status==='rejected'||!result.value).length};
 }
