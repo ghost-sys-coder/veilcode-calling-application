@@ -12,6 +12,7 @@ import type {PilotOffer} from '@/lib/pilot-types';
 import {pilotOfferIssues} from '@/lib/pilot-values';
 import {draftRoutes,type DraftRoute} from '@/lib/rate-draft-types';
 import {validateCallingDestination} from '@/lib/destination';
+import {assertVoicePriceCovered} from '@/lib/voice-price-guard';
 
 export interface LiveQuote extends PrepaidQuote {offerId:string;availableMicro:number}
 const fields=`q.id,q.to_number AS "to",q.from_number AS "from",q.route,q.rate_micro AS "rateMicro",q.fee_micro AS "feeMicro",
@@ -56,6 +57,7 @@ export async function createLiveQuote(operatorId:string,to:string,from:string):P
     const release=await assertLiveAdmission(client,operatorId,from),price=release.config.rates[from]?.[route];
     if(!price)throw new BillingError('There is no approved price for this calling number and destination route.',409);
     const rate:BillingRate={...price,route,mode:'live'},availableMicro=await spendable(client,current),amounts=reservationAmounts(availableMicro,rate);
+    await assertVoicePriceCovered(to,from,price);
     const quote=(await client.query<LiveQuote>(`INSERT INTO veilcall_prepaid_quotes AS q(id,account_id,to_number,from_number,route,rate_micro,fee_micro,max_seconds,held_micro,expires_at,offer_id)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now()+interval '45 seconds',$10) RETURNING ${fields}`,
     [randomUUID(),account.id,to,from,route,price.rateMicro,price.feeMicro,amounts.maxSeconds,amounts.heldMicro,release.id])).rows[0];

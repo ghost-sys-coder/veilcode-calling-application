@@ -75,7 +75,7 @@ test('live top-ups use canonical owned charges and mode-scoped idempotency even 
     paymentIntents:{retrieve:async()=>({id:'pi_fixture',livemode:true,status:'succeeded',amount_received:1000,currency:'usd',customer:'cus_fixture',latest_charge:'ch_fixture'})},
     charges:{retrieve:async()=>({id:'ch_fixture',livemode:true,customer:chargeOwner,payment_intent:'pi_fixture',currency:'usd',amount:1000,amount_refunded:0,disputed:false})}};
   const service=livePayments({stripe:canonical,database,store:{accountFields:'id',appendBillingEntry:async(...args)=>entries.push(args)}});
-  const event={id:'evt_live_fixture',livemode:true,type:'checkout.session.completed',data:{object:{id:'cs_fixture',customer:'cus_fixture'}}};
+  const event={id:'evt_live_fixture',api_version:'2026-08-26.dahlia',livemode:true,type:'checkout.session.completed',data:{object:{id:'cs_fixture',customer:'cus_fixture'}}};
   await environment({STRIPE_PROD_WEBHOOK_SECRET:secret,VEILCALL_LIVE_BILLING_ENABLED:undefined},async()=>{
     await service.processBillingEvent(event);await service.processBillingEvent(event);
     assert.equal(entries.length,1);assert.equal(entries[0][4],10000000);
@@ -83,6 +83,25 @@ test('live top-ups use canonical owned charges and mode-scoped idempotency even 
     chargeOwner='cus_foreign';await assert.rejects(service.processBillingEvent({...event,id:'evt_wrong_owner'}),error=>error.status===403);assert.equal(entries.length,1);
   });
 });
+test('Dahlia and Endive invoice snapshots use canonical subscription fields rather than snapshot billing facts',async()=>{
+  const updates=[],fetched=[],until=1900000000;
+  const database={query:async(sql,args)=>{
+    if(sql.includes('FROM veilcall_billing_accounts'))return {rows:[{id:'account',mode:'live',customerId:'cus_fixture'}]};
+    if(sql.includes('INSERT INTO veilcall_billing_events'))return {rowCount:1};
+    if(sql.includes('SELECT price_id FROM veilcall_billing_orders'))return {rows:[{price_id:'price_real'}]};
+    if(sql.includes('UPDATE veilcall_billing_accounts')){updates.push(args);return {rowCount:1};}
+    throw Error('Unexpected query');
+  }};
+  const stripe={invoices:{retrieve:async id=>{fetched.push(id);return {id,livemode:true,customer:'cus_fixture',parent:{subscription_details:{subscription:'sub_real'}}};}},
+    subscriptions:{retrieve:async id=>{fetched.push(id);return {id,livemode:true,customer:'cus_fixture',status:'active',items:{data:[{price:{id:'price_real'},quantity:1,current_period_end:until}]},latest_invoice:{status:'paid'}};}}};
+  const service=livePayments({stripe,database});
+  await environment({STRIPE_PROD_WEBHOOK_SECRET:secret},async()=>{
+    for(const version of ['2026-08-26.dahlia','2026-09-30.endive'])await service.processBillingEvent({id:`evt_${version}`,api_version:version,livemode:true,type:'invoice.paid',data:{object:{id:'in_fixture',customer:'cus_fixture',subscription:'sub_untrusted',parent:{subscription_details:{subscription:'sub_untrusted'}},amount_paid:1}}});
+  });
+  assert.deepEqual(fetched,['in_fixture','sub_real','in_fixture','sub_real']);assert.equal(updates.length,2);
+  for(const update of updates){assert.equal(update[1],'sub_real');assert.equal(update[2],'active');assert.equal(update[3],new Date(until*1000).toISOString());}
+});
+
 test('paid call permits carry a reservation binding and cannot be altered to select another hold',()=>{
   const tickets=loadModule('../src/lib/call-ticket.ts',{'server-only':{}}),secret=randomBytes(32).toString('hex'),id='11111111-1111-4111-8111-111111111111';
   const ticket=tickets.signCallTicket('user_fixture','+61412345678','+442079460124',secret,id);
@@ -115,7 +134,7 @@ test('paid authorization requires quote acceptance and signed TwiML consumes the
 test('live webhook signature uses the live secret and rejects a correctly signed test event',async()=>{
   const Stripe=require('stripe'),stripe=new Stripe(['sk','test',randomBytes(20).toString('hex')].join('_')),service=livePayments({stripe});
   await environment({STRIPE_PROD_WEBHOOK_SECRET:secret},async()=>{
-    const body=JSON.stringify({id:'evt_fixture',type:'invoice.paid',livemode:true,data:{object:{id:'in_fixture'}}});
+    const body=JSON.stringify({id:'evt_fixture',api_version:'2026-08-26.dahlia',type:'invoice.paid',livemode:true,data:{object:{id:'in_fixture'}}});
     const signature=stripe.webhooks.generateTestHeaderString({payload:body,secret});assert.equal(service.webhookEvent(body,signature).livemode,true);
     const swapped=body.replace('"livemode":true','"livemode":false'),signed=stripe.webhooks.generateTestHeaderString({payload:swapped,secret});
     assert.throws(()=>service.webhookEvent(swapped,signed),error=>error.status===403);assert.throws(()=>service.webhookEvent(body+' ',signature),error=>error.status===400);

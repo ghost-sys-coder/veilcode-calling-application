@@ -52,14 +52,19 @@ number rental and all other overhead; it is not profit. No saved eligible
 landline calls exist. This sample is too small to establish long-term margins.
 Subscription income is separate from this usage calculation.
 
-**UK mobile launch blocker:** the account-specific price list also includes
+**UK mobile tariff safeguard:** the account-specific price list also includes
 UK Mobile Other at $0.32/minute and Personal at $0.5577/minute. Ordinary-looking
 mobile numbers can fall into higher-cost prefix groups. The current generic
 `GB_MOBILE` route and common premium exclusions do not prove a number qualifies
-for $0.0305 termination. Before publishing the nine-cent mobile draft, add and
-verify a fail-closed, caller-specific provider-tariff/prefix check, or keep UK
-mobile unpublished. A single tested mobile number is not evidence for every
-UK mobile prefix. Other originating callers can attract surcharges; drafts
+for $0.0305 termination. Paid quotes now fetch Voice Pricing v2 for the exact
+destination and outgoing number after admission checks and before writing a
+quote. Unknown/mismatched/non-USD prices and provider outages reject the quote.
+The retail minute rate must cover the highest matching origin tariff and an
+additional $0.007/minute allowance for browser audio, capture and 30-day storage; the
+attempt fee must cover an additional $0.004 browser minute for ringing/rounding.
+This blocks expensive prefixes and origin surcharges at the proposed rates.
+It does not guarantee profit or freeze Twilio's future prices. A single tested
+mobile number is not evidence for every UK mobile prefix. Other originating callers can attract surcharges; drafts
 must be checked again for each newly assigned caller. Never copy this proposal
 to a Ugandan caller identity without checking its origin-specific tariffs.
 
@@ -71,7 +76,14 @@ publish all four routes simply because saving a private offer is possible.
 VeilCode Studio, Uganda, with a UK presence.
 Business address: Tankhill Road, Muyenga, Kampala, Uganda.
 Support, complaints, cancellation and privacy: support@veilcode.studio.
-Policy approval and tax review remain pending. Updating draft defaults does not
+The owner states that the business is a sole proprietorship, not VAT registered,
+and gives its operator/trading name as VeilCode Studio. No individual proprietor
+name has been supplied; none is invented or represented as independently verified.
+The owner reports completing policy review. The saved private offer already has
+both review checkboxes completed; those existing owner choices were preserved.
+Non-registration alone is not a finding that no tax obligations apply to every
+customer jurisdiction. No VAT registration or automatic-tax collection was added.
+Updating draft defaults does not
 rewrite previously saved policy snapshots or accepted contracts.
 
 ## Stripe dashboard walkthrough
@@ -86,13 +98,23 @@ The live webhook is enabled at the correct URL, and the missing checkout,
 subscription, refund and dispute event subscriptions have been added to it.
 Its signing-secret variable is scoped only to Production. Its snapshot version
 is currently `2026-08-26.dahlia`, while canonical API reads use the installed
-SDK's `2026-09-30.endive`. This is not a verified match to the setup guide below;
-review the version/consumed event envelope before commercial activation. The
-existing endpoint and signing secret were preserved. Successful Stripe delivery
-and final acceptance still need verification. Account readiness is not a tax determination.
+SDK's `2026-09-30.endive`. The Node handler consumes only signed event type/mode
+and resource/customer identifiers from snapshots; invoice, subscription, charge,
+dispute and Checkout billing facts are fetched canonically with the current SDK.
+Contract tests cover Dahlia and Endive invoice envelopes with misleading snapshot
+subscription fields, plus Dahlia signed payloads and canonical top-up fulfillment.
+The reviewed envelope is compatible with this handler; no endpoint replacement
+or signing-secret rotation was needed. The
+existing endpoint and signing secret were preserved. An existing, non-payment
+VeilCall `product.created` event was resent to that exact live endpoint using the
+official Stripe CLI. Stripe reported one pending webhook immediately after the
+resend and zero afterward, confirming successful delivery of the signed event.
+The handler ignores this event after signature/mode validation; it does not
+create financial objects or fulfill a payment. This proves delivery/signature
+handling, not end-to-end paid fulfillment. Account readiness is not a tax determination.
 The confirmed live Price and business details are saved as an audited private
-pilot offer. Policy and tax approvals remain false, and its rate card is empty;
-the proposed calling prices remain separately saved in Call costs. No offer has
+pilot offer. Existing owner review approvals are retained; rates stay private
+until the final release. The proposed calling prices are also saved in Call costs. No offer has
 been activated, and no customer payment or calling-credit entry was created.
 Confirm that Stripe's legal merchant identity and payout details represent the
 actual operator; UK presence alone does not establish a separate UK company.
@@ -158,6 +180,17 @@ actual operator; UK presence alone does not establish a separate UK company.
 
 Only the Price and portal IDs are non-secret references suitable for sharing.
 The API key is already supplied; no replacement key is needed for this setup.
+
+## Verification of tariff safeguards
+
+190 automated tests, lint, TypeScript and the production build pass. The real
+SQL validation suite passes with every change rolled back and a deterministic
+provider-price fixture. Guard tests cover standard routes, expensive UK mobile
+prefixes, origin surcharges, missing/wrong currency or identities, malformed
+prices, provider outages, and no quote/hold creation after refusal. Read-only
+account-specific pricing checks for two existing successful calls matched the
+exact origin/destination identities and returned the expected UK/AU mobile
+tariffs. No new call, recording, subscription, charge or credit was created.
 
 References: [Twilio account-specific Voice Pricing](https://www.twilio.com/docs/voice/pricing),
 [UK Voice prices](https://www.twilio.com/en-us/voice/pricing/gb),

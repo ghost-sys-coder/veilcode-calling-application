@@ -23,6 +23,9 @@ const values=loadModule('../src/lib/pilot-values.ts',base);base['@/lib/pilot-val
 base['@/lib/destination']=loadModule('../src/lib/destination.ts',{'server-only':{},'@/lib/calling-countries':loadModule('../src/lib/calling-countries.ts')});
 const legal=loadModule('../src/lib/legal-policies.ts');base['@/lib/legal-policies']=legal;
 const pilot=loadModule('../src/lib/pilot-store.ts',base);
+// This suite exercises real SQL with a deterministic provider-price fixture.
+// Exact origin/destination tariffs and failures are covered in voice-price-guard.test.mjs.
+base['@/lib/voice-price-guard']={assertVoicePriceCovered:async()=>{}};
 const live=loadModule('../src/lib/live-calling-store.ts',base);base['@/lib/live-calling-store']=live;
 const evidence=loadModule('../src/lib/twilio-settlement-proof.ts',{'server-only':{}});base['@/lib/twilio-settlement-proof']=evidence;
 const settlement=loadModule('../src/lib/twilio-settlement-store.ts',base);

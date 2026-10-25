@@ -29,6 +29,11 @@ policy approval remain explicit owner decisions before a commercial release.
 Rates are USD micro-units per connected minute plus a per-attempt fee. They are
 bound to an exact outgoing number and one of the four ordinary GB/AU routes.
 Private drafts on Call costs never become published prices automatically.
+Paid quotes also check the exact outgoing number and destination against live
+Twilio Voice Pricing v2 before insertion. High-cost prefixes/origins, unknown
+currencies or identities and provider failures refuse admission. The cost
+floor includes browser audio, recording capture and 30-day storage assumptions;
+it is not a profit or tax guarantee. Prices remain fixed once accepted.
 Changing form values or saving a new draft does not change an active offer.
 Versions and owner stage/activate/pause actions are audited with stale-write
 protection. Old activated policy snapshots remain accessible even after a pause.

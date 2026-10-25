@@ -46,5 +46,9 @@ with a UK presence; individuals, freelancers, agencies and businesses are eligib
 audiences. Confirmed contact: support@veilcode.studio; business address:
 Tankhill Road, Muyenga, Kampala, Uganda. Call-rate proposals and the exact Stripe
 dashboard checklist are in `pricing-and-stripe-setup.md`. Rates remain private;
-UK mobile needs a supplier-prefix check before the standard mobile proposal can
-be published. Policy/tax approval and live activation remain pending.
+Paid quotes now enforce exact caller/destination supplier prices before saving
+the quote; expensive UK prefixes, surcharges and unavailable prices fail closed.
+The owner reports policy review and non-VAT sole-proprietor status; saved owner
+review choices are retained. Signed live webhook transport was verified using
+an existing non-payment event. Final commercial activation and an authorized
+paid pilot remain separate steps.
