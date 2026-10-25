@@ -47,13 +47,13 @@ export async function claimTwilioSettlements(parentSid?:string):Promise<TwilioSe
     const jobs:TwilioSettlementJob[]=[];
     for(const row of rows.rows){
       const lease=randomUUID();
-      await client.query(`UPDATE veilcall_twilio_settlements SET lease_token=$2,lease_until=now()+interval '90 seconds',attempts=attempts+1,updated_at=now()
+      await client.query(`UPDATE veilcall_twilio_settlements SET lease_token=$2,lease_until=now()+interval '90 seconds',attempts=attempts+1,revision=revision+1,updated_at=now()
         WHERE reservation_id=$1`,[row.id,lease]);
       const reservation=(await client.query<CallReservation>(`SELECT ${reservationFields} FROM veilcall_call_reservations r
         JOIN veilcall_billing_accounts a ON a.id=r.account_id WHERE r.id=$1`,[row.id])).rows[0];
       // Persisted binding and reservation must agree even after an administrative edit.
       if(!reservation || reservation.mode!=='live' || reservation.callSid!==row.parentSid || !['active','settled'].includes(reservation.status)){
-        await client.query(`UPDATE veilcall_twilio_settlements SET state='review',reason='provider-mismatch',lease_token=NULL,lease_until=NULL WHERE reservation_id=$1`,[row.id]);
+        await client.query(`UPDATE veilcall_twilio_settlements SET state='review',reason='provider-mismatch',lease_token=NULL,lease_until=NULL,revision=revision+1,updated_at=now() WHERE reservation_id=$1`,[row.id]);
         continue;
       }
       jobs.push({reservation,accountSid:row.accountSid,lease,attempts:row.attempts+1});
@@ -62,13 +62,13 @@ export async function claimTwilioSettlements(parentSid?:string):Promise<TwilioSe
   });
 }
 export async function finishTwilioSettlement(job:TwilioSettlementJob):Promise<void> {
-  await reviewDatabase().query(`UPDATE veilcall_twilio_settlements SET state='done',reason=NULL,lease_token=NULL,lease_until=NULL,updated_at=now()
+  await reviewDatabase().query(`UPDATE veilcall_twilio_settlements SET state='done',reason=NULL,lease_token=NULL,lease_until=NULL,revision=revision+1,updated_at=now()
     WHERE reservation_id=$1 AND lease_token=$2`,[job.reservation.id,job.lease]);
 }
 export async function deferTwilioSettlement(job:TwilioSettlementJob,reason:SettlementReason,review:boolean):Promise<void> {
   const exhausted=job.attempts>=12;
   await reviewDatabase().query(`UPDATE veilcall_twilio_settlements SET state=$3,reason=$4,lease_token=NULL,lease_until=NULL,
-    next_attempt_at=now()+make_interval(secs=>$5),updated_at=now() WHERE reservation_id=$1 AND lease_token=$2`,
+    next_attempt_at=now()+make_interval(secs=>$5),revision=revision+1,updated_at=now() WHERE reservation_id=$1 AND lease_token=$2`,
     [job.reservation.id,job.lease,review||exhausted?'review':'pending',exhausted&&!review?'attempts-exhausted':reason,Math.min(900,15*2**Math.min(job.attempts-1,6))]);
 }
 export async function twilioSettlementStatus() {

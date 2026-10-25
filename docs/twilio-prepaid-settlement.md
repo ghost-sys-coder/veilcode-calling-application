@@ -60,21 +60,38 @@ records schedule a later retry. An interrupted worker can be claimed after its
 lease expires. A committed ledger with an unfinished job recovers without another
 provider fetch or debit.
 
-Existing owner administrators can inspect aggregate queue counts with authenticated
-`GET /api/admin/call-settlements`. A same-origin, bodyless `POST` to that endpoint
-processes up to three due jobs. It accepts no reservation, duration or amount from
-the browser. These operations remain available if new live calling is paused.
+The owner-only **Unresolved calls** section inside Billing shows pending counts,
+the oldest ten review items, masked destinations, held credit, verification reasons,
+and the most recent automatic check/failure. It adds no separate page or navigation.
+An empty queue remains a compact empty state. Refresh only reads; **Check due calls**
+processes up to three due jobs using the existing bodyless owner endpoint.
 
-**A recurring worker is not enabled in this stage.** Due retries require another
-terminal callback or the owner recovery action. Before admitting live customers,
-connect a separately authenticated recurring worker, add an owner review screen
-and audited resolution procedure, and verify missed-callback recovery while the
-app is closed. The active GitHub reminder workflow is unchanged.
+**Recheck call** requires a 10–500 character investigation note and the current
+review revision. The queue transition and audit record commit together. Duplicate
+or stale owner actions fail with 409. A recheck fetches canonical Twilio evidence;
+the owner cannot enter a duration, charge or provider identity, release an active
+hold manually, clear a wallet block, or bypass a mismatched call binding.
+
+The dedicated `call-settlement-recovery.yml` workflow requests a GitHub OIDC token
+and calls `/api/internal/call-settlements` approximately every five minutes while
+the app is closed. Its audience and exact repository, owner, master ref and workflow
+claims are pinned independently of reminder emails. It requires no added API key,
+does not check out repository code, and cannot trigger reminder email dispatch.
+GitHub can delay scheduled jobs; the Billing section shows the latest actual check.
+Each invocation processes three due jobs, using the existing per-job leases and
+debit idempotency. Conflicting evidence still needs owner investigation. Storage
+failures return 503 rather than being reported as a successful recovery pass.
+
+Scheduling becomes active only after the workflow is on the default `master`
+branch and the matching API and migrations are deployed to production. Preview
+verification uses rollback-only worker fixtures; it does not claim that a GitHub
+scheduled run has executed against the preview. No reminder workflow is dispatched
+as part of verification. These operations do not enable new paid calls.
 
 ## Validation and release
 
 No new environment variables or live credentials are required for the preview.
-Apply migration 010 to the isolated validation database before deploying to the
+Apply migrations 010 and 011 to the isolated validation database before deploying to the
 existing protected billing preview. Do not seed live wallets, bind historical calls,
 or migrate production as part of this stage.
 
@@ -92,9 +109,11 @@ or migrate production as part of this stage.
   existing owner voice credentials and prints aggregate counts only.
 - Run the full test suite, lint, typecheck and production build before release.
 
-Commercial launch still requires approved origin-aware prices, the live funding and
-admission integration, recurring recovery, review operations, and an end-to-end
-real-provider pilot. The provider adapter alone does not establish that launch.
+Before the production rollout, apply the tested additive migrations and deploy the
+API before merging/enabling its scheduled workflow; verify the first scheduled run
+and its Billing timestamp. Commercial launch still requires approved origin-aware
+prices, the live funding/admission integration and an end-to-end real-provider pilot.
+The provider adapter and recovery worker alone do not establish that launch.
 
 Provider references: [Call resource and durations](https://www.twilio.com/docs/voice/api/call-resource),
 [Number terminal callbacks](https://www.twilio.com/docs/voice/twiml/number),
