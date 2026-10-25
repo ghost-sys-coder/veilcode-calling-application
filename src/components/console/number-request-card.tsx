@@ -1,4 +1,5 @@
 "use client";
+import {Badge} from '@/components/ui/badge';
 import { useState } from "react";
 import { PhoneCall } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +16,7 @@ export function NumberRequestCard({item,busy,verificationEnabled,onVerify}:{item
   const canVerify=item.kind==="existing" && (["approved","failed"].includes(item.status) || (item.status==="verifying" && !verification));
   const country=businessCountries.find(country=>country.code===item.numberCountry)?.label || item.numberCountry;
   return <Card className="number-request-card">
-    <CardHeader><div className="number-card-heading"><CardTitle>{item.label}</CardTitle><span className="number-status" data-status={item.status}>{numberStatusLabels[item.status]}</span></div>
+    <CardHeader><div className="number-card-heading"><CardTitle>{item.label}</CardTitle><Badge className="number-status" data-status={item.status}>{numberStatusLabels[item.status]}</Badge></div>
       <p className="number-main-value">{item.phone || `${country} · New number request`}</p></CardHeader>
     <CardContent>
       {item.status==="pending" && <p className="number-hint">We’re reviewing your business details and number choice.</p>}

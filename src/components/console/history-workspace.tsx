@@ -1,4 +1,6 @@
 "use client";
+import {Badge} from '@/components/ui/badge';
+import {WorkspaceSkeleton} from '@/components/console/workspace-skeleton';
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -49,7 +51,7 @@ export function HistoryWorkspace({ configured,initialCall,initialError }: { conf
 
   const current = items.find((item) => item.callSid === selected);
   return <div className="history-page shell">
-    <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / REVIEW DESK</p><h1>Call history<span>.</span></h1><p>Listen back, capture the details, and make the next conversation better.</p></div>
+    <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / REVIEW DESK</p><h1>Call history</h1><p>Listen back, capture the details, and make the next conversation better.</p></div>
       <Button asChild className="vc-button vc-button-primary vc-button-md"><Link href="/console">Open dialer <ArrowUpRight size={16}/></Link></Button></div>
     <div className="history-toolbar"><span><Headphones size={17}/> YOUR CONVERSATIONS</span><Button variant="ghost" type="button" className="review-small-button" disabled={!configured || syncing || loading} onClick={async () => {
       setSyncing(true); setError("");
@@ -63,7 +65,7 @@ export function HistoryWorkspace({ configured,initialCall,initialError }: { conf
     }}><RefreshCw size={15}/>{syncing ? "Syncing recent calls…" : "Sync recent calls"}</Button></div>
     {error && <p className="review-message" role="alert">{error}</p>}
     {!configured ? <div className="history-empty"><h2>Your review desk is almost ready.</h2><p>Call review storage has not been connected yet. Calling remains available from the dialer.</p></div>
-      : loading && items.length === 0 ? <div className="history-empty" role="status">{syncing ? "Bringing in your recent Twilio calls…" : "Loading your conversations…"}</div>
+      : loading && items.length === 0 ? <WorkspaceSkeleton variant="detail" label={syncing ? "Bringing in your recent Twilio calls" : "Loading your conversations"}/>
         : items.length === 0 ? <div className="history-empty"><PhoneOutgoing size={30}/><h2>Your next call starts the story.</h2><p>Completed and attempted calls will appear here. Calls made without recording remain in history without audio.</p></div>
           : <div className="history-grid"><aside className="history-list" aria-label="Call history">
             {items.map((call) => <Button variant="ghost" type="button" key={call.callSid} className={`history-call${call.callSid === selected ? " history-call-selected" : ""}`}
@@ -73,7 +75,7 @@ export function HistoryWorkspace({ configured,initialCall,initialError }: { conf
                 setDirty(false); setSelected(call.callSid);
               }}><span className="history-call-top"><strong>{call.to || "Unknown recipient"}</strong><span>{call.country || "—"}</span></span>
               <span>{new Date(call.startedAt).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})}</span>
-              <span className="history-call-bottom"><span className={`review-status review-status-${call.status}`}>{call.status.replaceAll("-"," ")}</span><span>{Math.floor(call.duration/60)}:{String(call.duration%60).padStart(2,"0")} {call.recordings.some((recording) => !recording.deletedAt) ? "· Audio" : ""}</span></span>
+              <span className="history-call-bottom"><Badge className={`review-status review-status-${call.status}`}>{call.status.replaceAll("-"," ")}</Badge><span>{Math.floor(call.duration/60)}:{String(call.duration%60).padStart(2,"0")} {call.recordings.some((recording) => !recording.deletedAt) ? "· Audio" : ""}</span></span>
             </Button>)}
             {nextCursor && <Button variant="ghost" type="button" className="review-small-button history-load-more" disabled={loading} onClick={async () => {
               setLoading(true); setError("");

@@ -1046,7 +1046,7 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .billing-balance { font-variant-numeric:tabular-nums; }
 .billing-status { text-transform:capitalize; margin-bottom:8px; }
 .billing-actions { display:flex; flex-wrap:wrap; gap:10px; margin-block:20px 14px; }
-.billing-page button,.billing-page [role="combobox"],.billing-form button:not([role="checkbox"]),.billing-form input { min-height:44px; }
+.billing-page [data-slot="button"],.billing-page [role="combobox"],.billing-form button:not([role="checkbox"]),.billing-form input { min-height:44px; }
 .billing-feedback { min-height:24px; margin-block:18px; color:var(--ink-muted); font-size:13px; }
 .billing-transactions { padding-block:12px; }
 .billing-amount { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }

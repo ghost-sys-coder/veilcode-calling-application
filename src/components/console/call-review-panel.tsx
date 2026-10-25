@@ -3,6 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bookmark, RefreshCw, Save, X } from "lucide-react";
@@ -45,7 +47,8 @@ export function CallReviewPanel({ call, onDirtyChange, onUpdated }: {
     <dl className="review-call-facts"><div><dt>CALLED FROM</dt><dd>{call.from || "Not available"}</dd></div><div><dt>TELEPHONE DURATION</dt><dd>{Math.floor(call.duration/60)}m {call.duration%60}s</dd></div><div><dt>CALL STATUS</dt><dd>{call.status.replaceAll("-"," ")}</dd></div></dl>
     <FollowUpEditor callSid={call.callSid} onDirtyChange={setFollowUpDirty}/>
     <div className="review-section-title"><h3>Recordings</h3><span>{loading ? "Checking availability…" : `${review.recordings.length} recording${review.recordings.length === 1 ? "" : "s"}`}</span></div>
-    {review.recordings.length === 0 && <div className="review-no-audio"><p>No recording is available for this call.</p><span>Unrecorded calls cannot be recovered. For future calls, confirm consent and use Start recording in the dialer.</span></div>}
+    {loading && review.recordings.length===0 && <div className="grid gap-3" role="status" aria-label="Checking recording availability"><Skeleton className="h-16 w-full rounded-lg"/><Skeleton className="h-3 w-44 max-w-full"/></div>}
+    {!loading && review.recordings.length === 0 && <div className="review-no-audio"><Badge variant="outline">No recording</Badge><p>Unrecorded calls cannot be recovered. For future calls, confirm consent and use Start recording in the dialer.</p></div>}
     {review.recordings.map((recording) => <RecordingPlayer key={recording.sid} recording={recording}
       bookmarks={bookmarks.filter((item) => item.recordingSid === recording.sid)}
       onBookmark={(seconds) => {
@@ -61,7 +64,7 @@ export function CallReviewPanel({ call, onDirtyChange, onUpdated }: {
           if (mounted.current) setMessage("Recording deleted. Your notes and rating remain saved separately.");
         } catch (issue) { if (mounted.current) setMessage(issue instanceof Error ? issue.message : "Delete failed."); }
       }}/>)}
-    <div className="review-section-title"><h3>Quality review</h3><span>{dirty ? "Unsaved changes" : "Personal notes"}</span></div>
+    <div className="review-section-title"><h3>Quality review</h3><Badge variant={dirty?'warning':'outline'}>{dirty ? "Unsaved changes" : "Personal notes"}</Badge></div>
     <Label className="review-field">Call quality<Select value={rating===null ? "unrated" : String(rating)} disabled={saving} onValueChange={value=>{setRating(value==="unrated" ? null : Number(value));changed();}}>
       <SelectTrigger aria-label="Call quality"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="unrated">Not rated</SelectItem>{[1,2,3,4,5].map((value) => <SelectItem key={value} value={String(value)}>{value} / 5{value === 1 ? " — Poor" : value === 5 ? " — Excellent" : ""}</SelectItem>)}</SelectContent></Select></Label>
     <Label className="review-field">Review notes<Textarea value={notes} maxLength={10000} rows={5} disabled={saving} placeholder="What went well? What would you change next time?" onChange={(event) => { setNotes(event.target.value); changed(); }}/></Label>
