@@ -44,6 +44,10 @@ Amounts with unsupported decimal precision stay unknown. Currencies are not conv
 
 ## Deployment and validation
 
+Owner draft pricing and observed-cost comparisons are documented in
+[Draft calling rates](draft-calling-rates.md). They stay inside Call costs and
+cannot publish prices, change sandbox rates or charge customer credit.
+
 Apply additive `008_call_costs.sql` before deploying the code. Existing production
 Clerk owner settings, `DATABASE_URL` and Twilio credentials are reused; no additional
 environment variables are required. Live Checkout and paid calling remain disabled.
