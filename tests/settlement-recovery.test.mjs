@@ -60,3 +60,28 @@ test('the scheduled workflow never checks out code, dispatches email or logs pro
   const recovery=workflow.split('- name: Recover unfinished call settlements')[1];assert.ok(recovery);
   assert.doesNotMatch(recovery,/uses:|api\/voice\/reminders|TWILIO_AUTH_TOKEN|RESEND_API_KEY/);
 });
+async function runRecoveryStep(statuses){
+  const workflow=readFileSync(new URL('../.github/workflows/callback-email-reminders.yml',import.meta.url),'utf8').replaceAll('\r\n','\n');
+  const source=workflow.split('- name: Recover unfinished call settlements')[1].split("<<'NODE'\n")[1].split('\n          NODE')[0];
+  const AsyncFunction=Object.getPrototypeOf(async()=>{}).constructor;
+  const run=new AsyncFunction('fetch','process','console','setTimeout',source);
+  const state={calls:0,waits:[],logs:[]};
+  const fetch=async url=>{
+    if(new URL(url).hostname==='identity.test')return Response.json({value:'fixture-identity'});
+    assert.equal(url,'https://call.veilcode.studio/api/internal/call-settlements');
+    const status=statuses[Math.min(state.calls++,statuses.length-1)];
+    return Response.json(status===200?{processed:0,settled:0,pending:0,status:{due:0,review:0}}:{},{status});
+  };
+  try{await run(fetch,{env:{ACTIONS_ID_TOKEN_REQUEST_URL:'https://identity.test/token',ACTIONS_ID_TOKEN_REQUEST_TOKEN:'fixture-token'}},
+    {log:message=>state.logs.push(message)},(callback,delay)=>{state.waits.push(delay);callback();});}
+  catch(error){state.error=error.message;}
+  return state;
+}
+test('recovery waits for a newly deployed endpoint and then processes the successful response',async()=>{
+  const result=await runRecoveryStep([404,404,200]);assert.equal(result.calls,3);assert.deepEqual(result.waits,[10000,10000]);assert.equal(result.error,undefined);
+  assert.equal(JSON.parse(result.logs.at(-1)).processed,0);
+});
+test('deployment retries are bounded and do not hide authentication or storage failures',async()=>{
+  const missing=await runRecoveryStep([404]);assert.equal(missing.calls,7);assert.equal(missing.waits.reduce((sum,value)=>sum+value,0),60000);assert.match(missing.error,/HTTP 404/);
+  for(const status of [401,403,503]){const result=await runRecoveryStep([status]);assert.equal(result.calls,1);assert.equal(result.waits.length,0);assert.match(result.error,new RegExp(`HTTP ${status}`));}
+});
