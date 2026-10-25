@@ -12,7 +12,7 @@ export const accountFields=`id,operator_id AS "operatorId",mode,stripe_customer_
   held_micro::float8 AS "heldMicro",blocked`;
 const orderFields=`id,account_id AS "accountId",kind,amount_cents AS "amountCents",price_id AS "priceId",status,
   checkout_id AS "checkoutId",checkout_url AS "checkoutUrl",payment_intent_id AS "paymentIntentId"`;
-const reservationFields=`r.id,r.account_id AS "accountId",a.operator_id AS "operatorId",a.mode,r.to_number AS "to",r.from_number AS "from",r.route,
+export const reservationFields=`r.id,r.account_id AS "accountId",a.operator_id AS "operatorId",a.mode,r.to_number AS "to",r.from_number AS "from",r.route,
   r.rate_micro AS "rateMicro",r.fee_micro AS "feeMicro",r.held_micro AS "heldMicro",r.max_seconds AS "maxSeconds",r.status,
   r.call_sid AS "callSid",r.expires_at::text AS "expiresAt"`;
 

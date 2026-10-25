@@ -162,3 +162,8 @@ Production environment metadata and the production deployment were unchanged.
 Before a live launch, approve final pricing, exact route economics, number rental,
 credit/refund terms and tax treatment. Stripe Tax is not automatically enabled;
 active tax registrations and collection requirements need to be confirmed first.
+
+The isolated preview also includes a [stateful prepaid dialing test](prepaid-dialing-tests.md).
+It exercises accepted quotes, one-use reservations, provider duration limits,
+exactly-once settlement and recovery with a deterministic simulated provider.
+Test credit remains separate from real calls; production calling is unchanged.
