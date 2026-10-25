@@ -83,5 +83,9 @@ policies, a live provider adapter with signed callbacks and authoritative provid
 fetches, abandoned-call handling, and reconciliation of both legs and recording costs.
 The deterministic test provider does not establish that live integration by itself.
 
+The next staged backend is documented in [Twilio prepaid settlement](twilio-prepaid-settlement.md).
+It adds canonical provider verification and a durable recovery queue while keeping
+live admission disabled; it does not change this deterministic test flow.
+
 References: [Twilio Dial limits and ringing buffer](https://www.twilio.com/docs/voice/twiml/dial),
 [call records and duration](https://www.twilio.com/docs/voice/api/call-resource).
