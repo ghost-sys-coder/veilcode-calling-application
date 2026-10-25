@@ -12,7 +12,16 @@ export async function GET() {
 export async function POST(request:Request) {
   const owner=await numberOperator(request,true);if(owner instanceof Response)return owner;
   // No browser-supplied reservation, amount, duration or provider identity.
-  if(request.body){await request.body.cancel();return voiceJson({error:'This action does not accept call data.'},400);}
-  try{return voiceJson({...await reconcileTwilioSettlements(),status:await twilioSettlementStatus()});}
+  try{
+    // A bodyless network POST can still expose an empty ReadableStream. Reject
+    // the first actual byte, without buffering an arbitrary request body.
+    const reader=request.body?.getReader();
+    if(reader)try{
+      for(;;){const {done,value}=await reader.read();if(done)break;
+        if(value.byteLength){await reader.cancel();return voiceJson({error:'This action does not accept call data.'},400);}
+      }
+    }finally{reader.releaseLock();}
+    return voiceJson({...await reconcileTwilioSettlements(),status:await twilioSettlementStatus()});
+  }
   catch{return voiceJson({error:'Calls could not be fully reconciled. Try again shortly.'},503);}
 }

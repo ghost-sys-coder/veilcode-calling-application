@@ -119,6 +119,9 @@ test('owner recovery rejects other users and browser-supplied settlement fields'
     assert.equal((await route.GET()).status,denied||200);
     assert.equal((await route.POST(new Request('https://app.test',{method:'POST',body:'{"seconds":0}'}))).status,denied||400);assert.equal(runs,0);
     assert.equal((await route.POST(new Request('https://app.test',{method:'POST'}))).status,denied||200);assert.equal(runs,denied?0:1);
+    assert.equal((await route.POST(new Request('https://app.test',{method:'POST',body:''}))).status,denied||200);assert.equal(runs,denied?0:2);
+    const streamed=new ReadableStream({start(controller){controller.enqueue(new Uint8Array());controller.enqueue(new TextEncoder().encode('{"seconds":0}'));controller.close();}});
+    assert.equal((await route.POST(new Request('https://app.test',{method:'POST',body:streamed,duplex:'half'}))).status,denied||400);assert.equal(runs,denied?0:2);
   }
 });
 test('the prepaid webhook verifies the actual signature, exact callback URL and account before queue access',async()=>{
