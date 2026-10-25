@@ -1,4 +1,6 @@
 "use client";
+import {WorkspaceSkeleton} from '@/components/console/workspace-skeleton';
+import {Badge} from '@/components/ui/badge';
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Phone } from "lucide-react";
@@ -48,17 +50,17 @@ export function FollowUpsWorkspace({configured}:{configured:boolean}) {
   function reload(){setLoading(true);setError("");setItems([]);setRevision((value)=>value+1);}
   function close(){if (saving) return;if (dirty) setDiscard(true);else setEditor(null);}
   return <div className="contacts-page followups-page shell">
-    <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / NEXT CONVERSATIONS</p><h1>Keep the conversation going<span>.</span></h1><p>Your callbacks, in order. Make room for the people who asked to hear from you.</p></div><Button asChild variant="outline"><Link href="/console/history">Open call history</Link></Button></div>
+    <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / NEXT CONVERSATIONS</p><h1>Follow-ups</h1><p>Your callbacks, in order. Make room for the people who asked to hear from you.</p></div><Button asChild variant="outline"><Link href="/console/history">Open call history</Link></Button></div>
     <div className="followups-toolbar"><div><Label htmlFor="followup-view">Show follow-ups</Label><Select disabled={!configured || loading || more} value={view} onValueChange={value=>{setView(value as FollowUpView);setLoading(true);setItems([]);setError("");}}>
       <SelectTrigger id="followup-view"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="open">All open callbacks</SelectItem><SelectItem value="overdue">Overdue</SelectItem><SelectItem value="upcoming">Upcoming</SelectItem><SelectItem value="completed">Completed</SelectItem></SelectContent>
     </Select></div><Button variant="ghost" disabled={!configured || loading || more} onClick={reload}>Refresh</Button></div>
-    <p className="contacts-feedback" role="status">{loading ? "Loading follow-ups…" : ""}</p>
+    {loading && <WorkspaceSkeleton label="Loading follow-ups"/>}
     {error && <div className="review-message" role="alert">{error}<Button variant="outline" size="sm" disabled={loading || more} onClick={reload}>Retry</Button></div>}
     {!configured ? <div className="history-empty"><h2>Follow-up storage is not connected yet.</h2><p>You can continue calling from the dialer.</p></div>
       : !loading && !error && items.length===0 ? <div className="history-empty"><CalendarClock size={30}/><h2>{view==="completed" ? "No completed callbacks yet." : "No callbacks in this view."}</h2><p>Open a call in call history, choose Callback needed, and save a date and time.</p><Button asChild variant="outline"><Link href="/console/history">Choose a call</Link></Button></div>
       : items.length>0 ? <div className="contacts-directory"><Table><TableHeader><TableRow><TableHead>Contact</TableHead><TableHead>Callback</TableHead><TableHead>Note</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
         <TableBody>{items.map((item)=><TableRow key={item.callSid}><TableCell><div className="contact-person"><strong>{item.name || item.phone}</strong><span>{item.name ? item.phone : item.country}{item.company ? ` · ${item.company}` : ""}</span></div></TableCell>
-          <TableCell><div className="contact-number"><time dateTime={item.callbackAt!}>{new Date(item.callbackAt!).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})}</time><small className={!item.completed && Date.parse(item.callbackAt!)<now ? "followup-overdue" : ""}>{item.completed ? "Completed" : Date.parse(item.callbackAt!)<now ? "Overdue" : "Upcoming"}</small></div></TableCell>
+          <TableCell><div className="contact-number"><time dateTime={item.callbackAt!}>{new Date(item.callbackAt!).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})}</time><Badge variant={!item.completed && Date.parse(item.callbackAt!)<now?'warning':'secondary'}>{item.completed ? "Completed" : Date.parse(item.callbackAt!)<now ? "Overdue" : "Upcoming"}</Badge></div></TableCell>
           <TableCell className="contact-notes"><p title={item.note}>{item.note || "—"}</p></TableCell><TableCell><div className="contact-actions"><Button asChild variant="outline" size="sm"><Link href={`/console?callback=${item.callSid}`} aria-label={`Open callback to ${item.name || item.phone} in dialer`}><Phone aria-hidden="true"/> Dial</Link></Button>
             <Button variant="ghost" size="sm" onClick={()=>{setDirty(false);setSaving(false);setEditor(item);}}>Manage</Button></div></TableCell></TableRow>)}</TableBody></Table>
         {cursor && <div className="contacts-more"><Button variant="outline" disabled={loading || more} onClick={async()=>{

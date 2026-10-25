@@ -1,5 +1,29 @@
 # VeilCall UI patterns
 
+## Dashboard workspace
+
+Updated 25 October 2026. `src/app/console/console-theme.css` defines the
+workspace presentation and supersedes earlier console spacing and surface rules.
+Keep the landing-page typography separate from the application.
+
+| Property | Pattern |
+| --- | --- |
+| Navigation | Workspace: five calling destinations. Account: numbers and billing. Owner-only Administration dropdown: customer access, number requests, costs and billing controls. |
+| Compact navigation | Keep the existing five-item mobile/tablet dock and its breakpoint. Account and owner destinations are available through the header workspace menu. |
+| Surfaces | Opaque warm `--card` on `--background`; sidebar uses `--sidebar`. Shared workspace tint, highlight, warning and table tokens live together in the console theme. |
+| Cards | 14px corners, subtle shared shadow and theme border; 24px insets and 20px internal gaps. At phone widths: 12px corners and 20px insets. |
+| Spacing | 24px between sections; 20px on phones. 32px desktop page gutters; 18px phone gutters. Forms retain 14–20px field gaps. Avoid adding margins to a section already in the page grid. |
+| Typography | DM Sans dashboard headings, 28–34px with restrained tracking. Instrument Serif is reserved for monetary totals and the dialer aside. Tabular numerals for metrics, credit and usage. |
+| Status | Shared shadcn Badge for short passive labels; warm warning and destructive variants include readable text. Alerts retain longer errors, blocked states and required explanations. Badges have no button affordance. |
+| Consent | shadcn Checkbox at 17px inside a full clickable label row. A short bold label precedes supporting text. Agreement and immediate-start choices remain independent and unchecked by default. Button height rules must target `data-slot="button"`, never every `button`. |
+| Loading | `WorkspaceSkeleton` composes existing shadcn Card and Skeleton components for dashboard, billing, tables and detail views. Route fallback and recording placeholders use the same shapes. Shimmer stops under reduced motion. |
+| Menus | shadcn DropdownMenu with opaque popover surface, grouped labels, active-route treatment and Radix keyboard/focus handling. Keep every owner route reachable when the sidebar is collapsed. |
+
+Checked the official shadcn sidebar, dropdown-menu, badge, checkbox and skeleton
+registry entries before composing the refresh. Reuse the existing unified
+`radix-ui` dependency; no extra component library is needed. Console visual
+changes must preserve billing consent, calling authorization and owner access.
+
 ## Paid pilot setup and agreements
 
 Files: `pilot-setup.tsx`, `policy-agreement.tsx`, `paid-call-status.tsx` and the

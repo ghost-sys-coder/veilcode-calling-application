@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { operatorHasAccess as isApprovedOperator } from "@/lib/access";
 import { ConsoleShell } from "@/components/console/console-shell";
 import { isNumberAdmin } from "@/lib/number-access";
+import './console-theme.css';
 
 export default async function ConsoleLayout({ children }: { children:React.ReactNode }) {
   const { userId } = await auth();

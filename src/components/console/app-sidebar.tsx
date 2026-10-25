@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, ShieldCheck, Phone, CreditCard, Users, ChartNoAxesCombined } from "lucide-react";
+import { Phone, CreditCard, LockKeyhole } from "lucide-react";
 import { consoleDestinationActive, consoleDestinations } from "@/lib/console-navigation";
 import { useCompactNavigation } from "@/hooks/use-compact-navigation";
 import { BrandMark } from "@/components/landing/brand-mark";
 import { CallbackSidebarCount } from "@/components/console/callback-reminders";
+import { WorkspaceMenu } from "@/components/console/workspace-menu";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar,
@@ -18,7 +19,7 @@ export function AppSidebar({admin=false}:{admin?:boolean}) {
   const compact=useCompactNavigation();
   if (compact) return null;
   return <Sidebar collapsible="icon" className="workspace-sidebar">
-    <SidebarHeader className="workspace-sidebar-brand"><BrandMark /></SidebarHeader>
+    <SidebarHeader className="workspace-sidebar-brand"><BrandMark /><p className="workspace-brand-caption">Your calling workspace</p></SidebarHeader>
     <SidebarContent>
       <SidebarGroup>
         <SidebarGroupLabel>Workspace</SidebarGroupLabel>
@@ -35,18 +36,16 @@ export function AppSidebar({admin=false}:{admin?:boolean}) {
           </SidebarMenu>
         </nav>
       </SidebarGroup>
+      <SidebarGroup className="workspace-account-group"><SidebarGroupLabel>Account</SidebarGroupLabel><nav aria-label="Account navigation"><SidebarMenu>
+        <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname==='/console/numbers'} tooltip="My phone numbers"><Link href="/console/numbers" aria-current={pathname==='/console/numbers'?'page':undefined}><Phone aria-hidden="true"/><span>My phone numbers</span></Link></SidebarMenuButton></SidebarMenuItem>
+        <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith('/console/billing')} tooltip="Billing & credit"><Link href="/console/billing" aria-current={pathname.startsWith('/console/billing')?'page':undefined}><CreditCard aria-hidden="true"/><span>Billing & credit</span></Link></SidebarMenuButton></SidebarMenuItem>
+      </SidebarMenu></nav></SidebarGroup>
     </SidebarContent>
     <SidebarFooter>
       <SidebarMenu>
-        <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/billing")} tooltip="Billing"><Link href="/console/billing"><CreditCard aria-hidden="true"/><span>Billing & credit</span></Link></SidebarMenuButton></SidebarMenuItem>
-        {admin && <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/costs")} tooltip="Call costs"><Link href="/console/costs"><ChartNoAxesCombined aria-hidden="true"/><span>Call costs</span></Link></SidebarMenuButton></SidebarMenuItem>}
-        {admin && <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/customers")} tooltip="Customer access"><Link href="/console/customers"><Users aria-hidden="true"/><span>Customer access</span></Link></SidebarMenuButton></SidebarMenuItem>}
-        <SidebarMenuItem><SidebarMenuButton asChild isActive={pathname.startsWith("/console/numbers")} tooltip="Phone numbers"><Link href="/console/numbers" aria-current={pathname.startsWith("/console/numbers") ? "page" : undefined}><Phone aria-hidden="true"/><span>Phone numbers</span></Link></SidebarMenuButton></SidebarMenuItem>
-        <SidebarMenuItem><SidebarMenuButton asChild tooltip="Visit website">
-          <Link href="/"><ArrowUpRight aria-hidden="true"/><span>Visit website</span></Link>
-        </SidebarMenuButton></SidebarMenuItem>
+        <SidebarMenuItem><WorkspaceMenu admin={admin} sidebar/></SidebarMenuItem>
       </SidebarMenu>
-      <div className="workspace-private-note"><ShieldCheck size={16} aria-hidden="true"/><span>Private calling workspace</span></div>
+      <div className="workspace-private-note"><LockKeyhole size={13} aria-hidden="true"/><span>Private by design</span></div>
     </SidebarFooter>
     <SidebarRail />
   </Sidebar>;

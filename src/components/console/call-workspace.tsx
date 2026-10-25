@@ -9,15 +9,15 @@ export function CallWorkspace({ configured, setupIssues, callerIds, recordingEna
 }) {
   return <div className="dialer-page">
     <div className="shell dialer-title-row">
-      <div><p className="dialer-eyebrow"><span className="dialer-blink" /> VEILCALL / VOICE TERMINAL 001</p>
-      <h1>Good conversations <em>start here.</em></h1>
+      <div><p className="dialer-eyebrow"><span className="dialer-blink" /> WORKSPACE / OUTBOUND CALLING</p>
+      <h1>Dialer</h1>
       <p>{paid?'Call approved UK and Australia routes with a price quote before each call.':'Call contacts using one of your approved calling numbers. UK and Australia calling has been verified; other routes depend on account permissions.'}</p></div>
       <div className="dialer-title-mark"><Signal size={22}/><span>UGANDA <ArrowUpRight size={16}/> US / CANADA / UK / AU</span></div>
     </div>
     {contactError && <p className="shell review-message" role="alert">{contactError}</p>}
     <div className="shell dialer-grid">
       <aside className="dialer-aside">
-        <div className="dialer-aside-top"><span className="dialer-panel-number">01 / CONTROL ROOM</span><Headphones size={22}/></div>
+        <div className="dialer-aside-top"><span className="dialer-panel-number">CALLING WORKSPACE</span><Headphones size={22}/></div>
         <h2>Your voice.<br/>Your number.</h2>
         <p>Audio travels over your internet connection. Twilio completes the telephone call.</p>
         <div className="dialer-aside-line" />

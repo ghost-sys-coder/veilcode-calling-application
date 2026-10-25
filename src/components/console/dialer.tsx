@@ -339,9 +339,9 @@ export function Dialer({ configured, setupIssues, callerIds, recordingEnabled, r
     {paid&&<PaidCallStatus refreshKey={`${state}:${callSid??''}`}/>}
     {finishedCall && reviewEnabled && <CallWrapUpPanel key={finishedCall} callSid={finishedCall} onDirtyChange={setWrapUpDirty} onBusyChange={setWrapUpBusy}/>}
     <section className="dialer-terminal" aria-labelledby="dialer-title">
-    <div className="terminal-topbar"><span><span className="terminal-light"/> VEILCALL / TERMINAL</span><span>SESSION 001 <span className="terminal-divider">/</span> SECURE</span></div>
+    <div className="terminal-topbar"><span><span className="terminal-light"/> VEILCALL / CALLING</span><span>INTERNET CALLING</span></div>
     <div className="terminal-body">
-      <div className="terminal-heading"><div><div className="terminal-overline">02 / OUTBOUND VOICE</div><h2 id="dialer-title">Make a call<span>.</span></h2></div>
+      <div className="terminal-heading"><div><div className="terminal-overline">OUTBOUND CALL</div><h2 id="dialer-title">Make a call<span>.</span></h2></div>
         <span className={`terminal-state terminal-state-${state}`}><span className="terminal-status-dot" />{configured ? stateLabel[state] : "SETUP REQUIRED"}</span>
       </div>
       <CallerIdSelector callerIds={callerIds} value={fromNumber} disabled={!configured || isBusy} onChange={changeCallerId} />

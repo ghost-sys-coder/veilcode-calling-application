@@ -1,4 +1,6 @@
 "use client";
+import {Badge} from '@/components/ui/badge';
+import {WorkspaceSkeleton} from '@/components/console/workspace-skeleton';
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Phone, RefreshCw, ShieldCheck } from "lucide-react";
@@ -36,10 +38,10 @@ export function NumberOnboarding() {
     } finally {setBusy(false);}
   }
   return <main className="shell number-setup-page">
-    <div className="number-page-heading"><div><p className="dialer-eyebrow">YOUR ACCOUNT / YOUR CALLING IDENTITY</p><h1>A number <em>of your own.</em></h1><p>Set up your profile, then bring an existing number or request a new one.</p></div>
+    <div className="number-page-heading"><div><p className="dialer-eyebrow">YOUR ACCOUNT / YOUR CALLING IDENTITY</p><h1>Phone numbers</h1><p>Set up your profile, then bring an existing number or request a new one.</p></div>
       {summary?.operatorApproved && <Button asChild variant="outline"><Link href="/console">Open dialer<ArrowRight aria-hidden="true"/></Link></Button>}
     </div>
-    {loading && <p className="number-loading" role="status">Loading your number setup…</p>}
+    {loading && <WorkspaceSkeleton variant="billing" label="Loading your phone numbers"/>}
     {error && <Alert variant="destructive"><AlertTitle>Number setup unavailable</AlertTitle><AlertDescription>{error}<Button variant="outline" type="button" onClick={refresh}><RefreshCw aria-hidden="true"/>Try again</Button></AlertDescription></Alert>}
     {summary && <>
       {!summary.operatorApproved && <AccessRequest profileReady={!!summary.profile}/>}
@@ -52,8 +54,8 @@ export function NumberOnboarding() {
       </div>
       <p className="number-feedback" role="status">{message}</p>
       {(summary.legacyCallerIds.length>0 || summary.identities.length>0) && <section className="number-assigned-section" aria-labelledby="assigned-numbers-heading"><h2 id="assigned-numbers-heading">Your calling numbers</h2><div className="number-assigned-list">
-        {summary.legacyCallerIds.map(number=><div key={number.number}><Phone aria-hidden="true"/><span><strong>{number.label}</strong><span className="number-main-value">{number.number}</span></span><span className="number-status" data-status="verified">Ready</span></div>)}
-        {summary.identities.map(number=><div key={number.number}><Phone aria-hidden="true"/><span><strong>{number.label}</strong><span className="number-main-value">{number.number}</span></span><span className="number-status" data-status={number.status==="active" ? "verified" : "revoked"}>{number.status==="active" ? "Ready" : "Disabled"}</span></div>)}
+        {summary.legacyCallerIds.map(number=><div key={number.number}><Phone aria-hidden="true"/><span><strong>{number.label}</strong><span className="number-main-value">{number.number}</span></span><Badge className="number-status" data-status="verified">Ready</Badge></div>)}
+        {summary.identities.map(number=><div key={number.number}><Phone aria-hidden="true"/><span><strong>{number.label}</strong><span className="number-main-value">{number.number}</span></span><Badge className="number-status" data-status={number.status==="active" ? "verified" : "revoked"}>{number.status==="active" ? "Ready" : "Disabled"}</Badge></div>)}
       </div></section>}
       <section className="number-requests-section" aria-labelledby="number-requests-heading"><div className="number-section-heading"><h2 id="number-requests-heading">Your requests</h2><Button variant="ghost" type="button" disabled={busy} onClick={refresh}><RefreshCw aria-hidden="true"/>Refresh</Button></div>
         {summary.requests.length ? <div className="number-request-list">{summary.requests.map(item=><NumberRequestCard key={item.id} item={item} busy={busy} verificationEnabled={summary.verificationEnabled} onVerify={()=>save(`/api/onboarding/numbers/${item.id}/verify`,"POST",{consent:true},"Verification requested. Answer the call and enter the code shown below.")}/>)}</div>

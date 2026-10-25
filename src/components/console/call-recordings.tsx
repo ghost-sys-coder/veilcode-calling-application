@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RecordingPlayer } from "@/components/console/recording-player";
 import type { CallReview } from "@/lib/review-types";
 
@@ -31,7 +32,7 @@ export function CallRecordings({callSid}:{callSid:string}) {
   },[callSid,refresh]);
   return <section className="wrapup-recordings" aria-label="Recordings from this call">
     <div className="review-section-title"><h3>Recording &amp; playback</h3><Button type="button" variant="ghost" size="sm" disabled={loading} onClick={()=>{setLoading(true);setRefresh(value=>value+1);}}><RefreshCw size={14}/> Refresh</Button></div>
-    {loading && <p role="status">Checking recordings…</p>}
+    {loading && !record && <div className="grid gap-3" role="status" aria-label="Checking recordings"><Skeleton className="h-16 w-full rounded-lg"/><Skeleton className="h-3 w-44 max-w-full"/></div>}
     {error && <p role="alert" className="review-message">{error}</p>}
     {record?.recordings.map(recording=><RecordingPlayer key={recording.sid} recording={recording} bookmarks={record.bookmarks.filter(item=>item.recordingSid===recording.sid)}/>)}
     {!loading && record && !record.recordings.length && <p className="followup-hint">No recording is available yet. If you started recording, audio may still be processing; refresh shortly. For your next call, confirm participant consent and select Start recording after they answer.</p>}

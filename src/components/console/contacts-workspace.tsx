@@ -1,4 +1,5 @@
 "use client";
+import {WorkspaceSkeleton} from '@/components/console/workspace-skeleton';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -48,7 +49,7 @@ export function ContactsWorkspace({configured}:{configured:boolean}) {
   const busy=loading || loadingMore;
 
   return <div className="contacts-page shell">
-    <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / ADDRESS BOOK</p><h1>People, remembered<span>.</span></h1><p>Keep the right number and a little context close at hand.</p></div>
+    <div className="history-title"><div><p className="dialer-eyebrow"><span className="dialer-blink"/> VEILCALL / ADDRESS BOOK</p><h1>Contacts</h1><p>Keep the right number and a little context close at hand.</p></div>
       <div className="contacts-title-actions"><Button variant="outline" disabled={!configured || busy} onClick={()=>{setMessage("");setImporting(true);}}><Upload aria-hidden="true"/> Import CSV</Button><Button disabled={!configured || busy} onClick={()=>{setMessage("");setEditor({contact:null});}}><Plus aria-hidden="true"/> New contact</Button></div>
     </div>
     <form className="contacts-search" role="search" onSubmit={(event)=>{event.preventDefault();setLoading(true);setError("");setQuery(search.trim());setRevision((value)=>value+1);}}>
@@ -56,7 +57,7 @@ export function ContactsWorkspace({configured}:{configured:boolean}) {
       <Button type="submit" variant="outline" disabled={!configured || busy}>Search</Button>
       {query && <Button type="button" variant="ghost" disabled={busy} onClick={()=>{setSearch("");setQuery("");reload();}}>Clear</Button>}
     </form>
-    <p className="contacts-feedback" role="status" aria-live="polite">{loading ? "Loading contacts…" : message}</p>
+    {loading && items.length===0 && <WorkspaceSkeleton label="Loading contacts"/>}<p className="contacts-feedback" role="status" aria-live="polite">{message}</p>
     {error && <div className="review-message" role="alert">{error}<Button variant="outline" size="sm" onClick={reload} disabled={busy}>Retry</Button></div>}
     {!configured ? <div className="history-empty"><h2>Your address book is almost ready.</h2><p>Contact storage has not been connected yet. You can keep calling from the dialer.</p></div>
       : !loading && !error && items.length===0 ? <div className="history-empty"><Users size={30}/><h2>{query ? "No contacts found." : "A familiar voice starts with a name."}</h2><p>{query ? "Try another name, company, or phone number." : "Save your first contact to keep their number, company, and notes together."}</p>{!query && <Button variant="outline" onClick={()=>setEditor({contact:null})}><Plus/> Add your first contact</Button>}</div>
